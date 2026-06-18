@@ -1,4 +1,4 @@
-# Virtual environment
+# Virtual environment (too big for GitHub)
 venv/
 __pycache__/
 *.pyc
