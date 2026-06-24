@@ -1,0 +1,11 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% block title %}Manage Users{% endblock %}
+{% block page_title %}Manage Users{% endblock %}
+{% block dashboard_content %}
+<div class="card">
+    <div class="card-body">
+        <p>This is a placeholder for the Users page. From here, the Admin will be able to add, edit, or remove users.</p>
+        <a href="{% url 'admin-dashboard' %}" class="btn btn-primary" style="color: var(--color-primary-light);">← Back to Dashboard</a>
+    </div>
+</div>
+{% endblock %}

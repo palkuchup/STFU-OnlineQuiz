@@ -5,107 +5,94 @@ from subjects.models import Subject
 
 
 class Quiz(models.Model):
-    quiz_id = models.UUIDField(
-        db_column='quiz_id',
-        primary_key=True,
-        default=uuid.uuid4,
-        editable=False
-    )
-    title = models.CharField(
-        db_column='title',
-        max_length=200,
-        blank=False
-    )
-    description = models.TextField(
-        db_column='description',
-        blank=True
-    )
+    QUIZ_TYPE_REGULAR = 'regular'
+    QUIZ_TYPE_SELF_ASSESSMENT = 'self_assessment'
+
+    QUIZ_TYPE_CHOICES = [
+        (QUIZ_TYPE_REGULAR, 'Regular Quiz'),
+        (QUIZ_TYPE_SELF_ASSESSMENT, 'Self-Assessment'),
+    ]
+
+    quiz_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    title = models.CharField(max_length=200, blank=False)
+    description = models.TextField(blank=True)
     subject = models.ForeignKey(
         Subject,
-        db_column='subject',
         on_delete=models.CASCADE,
         related_name='quizzes'
     )
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        db_column='created_by',
         on_delete=models.CASCADE,
-        related_name='quizzes'
+        related_name='created_quizzes'
+    )
+    quiz_type = models.CharField(
+        max_length=20,
+        choices=QUIZ_TYPE_CHOICES,
+        default=QUIZ_TYPE_REGULAR
     )
     time_limit = models.IntegerField(
-        db_column='time_limit',
-        help_text='Time limit in minutes',
-        null=True,
-        blank=True
+        help_text='Time limit in minutes (0 = no limit)',
+        default=0
     )
-    is_active = models.BooleanField(
-        db_column='is_active',
-        default=False
-    )
-    created_at = models.DateTimeField(
-        db_column='created_at',
-        auto_now_add=True
-    )
+    is_active = models.BooleanField(default=False)
+    # Allow multiple attempts for self-assessment
+    allow_multiple_attempts = models.BooleanField(default=False)
+    # Show correct answers after submission
+    show_answers_after_submit = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'quizzes'
+        ordering = ['-created_at']
 
     def __str__(self):
-        return str(self.quiz_id)
+        return f"{self.title} ({self.get_quiz_type_display()})"
+
+    @property
+    def question_count(self):
+        return self.questions.count()
+
+    @property
+    def grade_level(self):
+        return self.subject.grade_level
 
 
 class Question(models.Model):
-    question_id = models.UUIDField(
-        db_column='question_id',
-        primary_key=True,
-        default=uuid.uuid4,
-        editable=False
-    )
+    question_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     quiz = models.ForeignKey(
         Quiz,
-        db_column='quiz',
         on_delete=models.CASCADE,
         related_name='questions'
     )
-    text = models.TextField(
-        db_column='text',
-        blank=False
-    )
-    order = models.IntegerField(
-        db_column='order',
-        default=0
-    )
+    text = models.TextField(blank=False)
+    order = models.IntegerField(default=0)
+    # Optional image for question
+    image = models.ImageField(upload_to='question_images/', null=True, blank=True)
 
     class Meta:
         db_table = 'questions'
         ordering = ['order']
 
     def __str__(self):
-        return str(self.question_id)
+        return f"Q{self.order}: {self.text[:60]}"
 
 
 class Choice(models.Model):
-    choice_id = models.UUIDField(
-        db_column='choice_id',
-        primary_key=True,
-        default=uuid.uuid4,
-        editable=False
-    )
+    choice_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     question = models.ForeignKey(
         Question,
-        db_column='question',
         on_delete=models.CASCADE,
         related_name='choices'
     )
-    text = models.CharField(
-        db_column='text',
-        max_length=200,
-        blank=False
-    )
-    is_correct = models.BooleanField(
-        db_column='is_correct',
-        default=False
-    )
+    text = models.CharField(max_length=500, blank=False)
+    is_correct = models.BooleanField(default=False)
+    order = models.IntegerField(default=0)
 
     class Meta:
         db_table = 'choices'
+        ordering = ['order']
 
     def __str__(self):
-        return str(self.choice_id)
+        return f"{'✓' if self.is_correct else '✗'} {self.text[:60]}"

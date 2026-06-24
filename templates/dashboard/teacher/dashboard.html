@@ -1,0 +1,154 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% block title %}Teacher Dashboard{% endblock %}
+{% block page_title %}Teacher Dashboard{% endblock %}
+
+{% block sidebar_nav %}
+<a href="{% url 'teacher-dashboard' %}" class="nav-item active">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    <span>Overview</span>
+</a>
+<a href="{% url 'teacher-quizzes' %}" class="nav-item">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    <span>My Quizzes</span>
+</a>
+<a href="{% url 'teacher-students' %}" class="nav-item">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+    <span>My Students</span>
+</a>
+{% endblock %}
+
+{% block dashboard_content %}
+<!-- Teacher Welcome Banner -->
+<div class="welcome-banner">
+    <div class="welcome-text">
+        <h2>Welcome, {{ teacher.first_name }}! 👋</h2>
+        <p>You are teaching {% if teacher.teacher_profile %}{{ teacher.teacher_profile.get_subject_specialization_display }}{% endif %} across Grades 7–10.</p>
+    </div>
+</div>
+
+<!-- Stats -->
+<div class="stats-grid">
+    <div class="stat-card stat-purple">
+        <div class="stat-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        </div>
+        <div class="stat-content">
+            <div class="stat-value">{{ my_subjects.count }}</div>
+            <div class="stat-label">My Subjects</div>
+        </div>
+    </div>
+    <div class="stat-card stat-blue">
+        <div class="stat-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <div class="stat-content">
+            <div class="stat-value">{{ total_quizzes }}</div>
+            <div class="stat-label">Total Quizzes</div>
+        </div>
+    </div>
+    <div class="stat-card stat-green">
+        <div class="stat-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        </div>
+        <div class="stat-content">
+            <div class="stat-value">{{ active_quizzes }}</div>
+            <div class="stat-label">Active Quizzes</div>
+        </div>
+    </div>
+    <div class="stat-card stat-orange">
+        <div class="stat-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        </div>
+        <div class="stat-content">
+            <div class="stat-value">{{ total_students }}</div>
+            <div class="stat-label">Enrolled Students</div>
+        </div>
+    </div>
+</div>
+
+<div class="dashboard-grid">
+    <!-- My Subjects -->
+    <div class="card">
+        <div class="card-header">
+            <h3>My Subjects</h3>
+        </div>
+        <div class="card-body">
+            {% for subject in my_subjects %}
+            <div class="subject-item">
+                <div class="subject-icon subject-{{ subject.subject_code }}">
+                    {% if subject.subject_code == 'english' %}📖
+                    {% elif subject.subject_code == 'math' %}➗
+                    {% elif subject.subject_code == 'science' %}🔬
+                    {% else %}🏳️{% endif %}
+                </div>
+                <div class="subject-info">
+                    <div class="subject-name">{{ subject.name }}</div>
+                    <div class="subject-meta">{{ subject.enrollments.count }} students enrolled</div>
+                </div>
+                <span class="badge badge-grade">Grade {{ subject.grade_level }}</span>
+            </div>
+            {% empty %}
+            <div class="empty-state"><span class="empty-icon">📚</span><p>No subjects assigned yet</p></div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Recent Quizzes -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Recent Quizzes</h3>
+            <a href="{% url 'teacher-quizzes' %}" class="card-link">View all →</a>
+        </div>
+        <div class="card-body">
+            {% for quiz in recent_quizzes %}
+            <div class="quiz-item">
+                <div class="quiz-info">
+                    <div class="quiz-title">{{ quiz.title }}</div>
+                    <div class="quiz-meta">{{ quiz.subject.name }} · {{ quiz.get_quiz_type_display }}</div>
+                </div>
+                <div class="quiz-status">
+                    <span class="badge {% if quiz.is_active %}badge-success{% else %}badge-secondary{% endif %}">
+                        {% if quiz.is_active %}Active{% else %}Inactive{% endif %}
+                    </span>
+                </div>
+            </div>
+            {% empty %}
+            <div class="empty-state"><span class="empty-icon">📝</span><p>No quizzes created yet</p></div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Recent Results -->
+    <div class="card card-wide">
+        <div class="card-header">
+            <h3>Recent Student Results</h3>
+        </div>
+        <div class="card-body">
+            <div class="table-wrapper">
+                <table class="data-table">
+                    <thead>
+                        <tr><th>Student</th><th>Quiz</th><th>Score</th><th>Percentage</th><th>Date</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for attempt in recent_results %}
+                        <tr>
+                            <td>{{ attempt.student.full_name }}</td>
+                            <td>{{ attempt.quiz.title }}</td>
+                            <td>{{ attempt.score }}/{{ attempt.total_questions }}</td>
+                            <td>
+                                <div class="score-badge {% if attempt.percentage >= 75 %}score-pass{% else %}score-fail{% endif %}">
+                                    {{ attempt.percentage|floatformat:1 }}%
+                                </div>
+                            </td>
+                            <td class="text-muted">{{ attempt.completed_at|date:"M d, Y" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="5" class="text-center text-muted">No results yet</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

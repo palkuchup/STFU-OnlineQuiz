@@ -1,0 +1,11 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% block title %}Available Quizzes{% endblock %}
+{% block page_title %}Available Quizzes{% endblock %}
+{% block dashboard_content %}
+<div class="card">
+    <div class="card-body">
+        <p>This is a placeholder for the Student Available Quizzes page where you can start a quiz.</p>
+        <a href="{% url 'student-dashboard' %}" class="btn btn-primary" style="color: var(--color-primary-light);">← Back to Dashboard</a>
+    </div>
+</div>
+{% endblock %}

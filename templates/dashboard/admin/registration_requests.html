@@ -1,0 +1,11 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% block title %}Registration Requests{% endblock %}
+{% block page_title %}Registration Requests{% endblock %}
+{% block dashboard_content %}
+<div class="card">
+    <div class="card-body">
+        <p>This is a placeholder for the Registration Requests page where you review student uploaded IDs and approve them.</p>
+        <a href="{% url 'admin-dashboard' %}" class="btn btn-primary" style="color: var(--color-primary-light);">← Back to Dashboard</a>
+    </div>
+</div>
+{% endblock %}
