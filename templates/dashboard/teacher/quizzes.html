@@ -1,11 +1,91 @@
 {% extends 'dashboard/base_dashboard.html' %}
 {% block title %}My Quizzes{% endblock %}
 {% block page_title %}My Quizzes{% endblock %}
+{% block breadcrumb %}Teacher / Quizzes{% endblock %}
+
+{% block sidebar_nav %}
+<a href="{% url 'teacher-dashboard' %}" class="nav-item">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="7" height="7" />
+        <rect x="14" y="3" width="7" height="7" />
+        <rect x="14" y="14" width="7" height="7" />
+        <rect x="3" y="14" width="7" height="7" />
+    </svg>
+    <span>Overview</span>
+</a>
+<a href="{% url 'teacher-quizzes' %}" class="nav-item active">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10" />
+        <polyline points="12 6 12 12 16 14" />
+    </svg>
+    <span>My Quizzes</span>
+</a>
+<a href="{% url 'teacher-students' %}" class="nav-item">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+    </svg>
+    <span>My Students</span>
+</a>
+{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'teacher-create-quiz' %}" class="btn-primary-action">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19" />
+        <line x1="5" y1="12" x2="19" y2="12" />
+    </svg>
+    Create Quiz
+</a>
+{% endblock %}
+
 {% block dashboard_content %}
+{% if quizzes %}
+<div class="quiz-grid">
+    {% for quiz in quizzes %}
+    <div class="quiz-card">
+        <div class="quiz-card-header">
+            <div class="quiz-card-subject">
+                <span class="subject-dot subject-dot-{{ quiz.subject.subject_code }}"></span>
+                {{ quiz.subject.name }}
+            </div>
+            <span class="badge {% if quiz.is_active %}badge-success{% else %}badge-secondary{% endif %}">
+                {% if quiz.is_active %}Active{% else %}Inactive{% endif %}
+            </span>
+        </div>
+        <h3 class="quiz-card-title">{{ quiz.title }}</h3>
+        <p class="quiz-card-desc">{{ quiz.description|truncatechars:100 }}</p>
+        <div class="quiz-card-meta">
+            <span class="tag tag-{{ quiz.quiz_type }}">{{ quiz.get_quiz_type_display }}</span>
+            {% if quiz.time_limit > 0 %}
+            <span class="tag">⏱ {{ quiz.time_limit }} min</span>
+            {% endif %}
+            <span class="tag">{{ quiz.question_count }} questions</span>
+        </div>
+        <div class="quiz-card-footer">
+            <span class="text-muted">Created {{ quiz.created_at|date:"M d, Y" }}</span>
+            <div class="quiz-card-actions">
+                <a href="{% url 'teacher-quiz-results' quiz.quiz_id %}" class="btn-text">View Results</a>
+                <a href="/admin/quizzes/quiz/{{ quiz.quiz_id }}/change/" class="btn-text">Edit</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
 <div class="card">
     <div class="card-body">
-        <p>This is a placeholder for the Teacher Quizzes page.</p>
-        <a href="{% url 'teacher-dashboard' %}" class="btn btn-primary" style="color: var(--color-primary-light);">← Back to Dashboard</a>
+        <div class="empty-state">
+            <span class="empty-icon">📝</span>
+            <p>You haven't created any quizzes yet.</p>
+            <a href="{% url 'teacher-create-quiz' %}" class="btn-primary-action"
+                style="margin-top:16px; display:inline-flex;">Create your first quiz</a>
+        </div>
     </div>
 </div>
+{% endif %}
 {% endblock %}

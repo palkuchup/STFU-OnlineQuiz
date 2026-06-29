@@ -1,11 +1,61 @@
 {% extends 'dashboard/base_dashboard.html' %}
 {% block title %}Manage Subjects{% endblock %}
 {% block page_title %}Manage Subjects{% endblock %}
+{% block breadcrumb %}<a href="{% url 'admin-dashboard' %}" style="color: inherit; text-decoration: none;">Admin</a> <span style="margin: 0 8px;">/</span> <a href="{% url 'admin-subjects' %}" style="color: inherit; text-decoration: none;">Subjects</a>{% endblock %}
+
+{% block sidebar_nav %}
+<a href="{% url 'admin-dashboard' %}" class="nav-item">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    <span>Overview</span>
+</a>
+<a href="{% url 'admin-users' %}" class="nav-item">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    <span>Users</span>
+</a>
+<a href="{% url 'admin-subjects' %}" class="nav-item active">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+    <span>Subjects</span>
+</a>
+<a href="{% url 'admin-reg-requests' %}" class="nav-item">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+    <span>Requests</span>
+</a>
+<a href="/admin/" target="_blank" class="nav-item">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41"/><path d="M4.93 19.07l1.41-1.41"/><path d="M19.07 19.07l-1.41-1.41"/><path d="M4.93 4.93l1.41 1.41"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/></svg>
+    <span>Django Admin</span>
+</a>
+{% endblock %}
+
 {% block dashboard_content %}
-<div class="card">
-    <div class="card-body">
-        <p>This is a placeholder for the Subjects page.</p>
-        <a href="{% url 'admin-dashboard' %}" class="btn btn-primary" style="color: var(--color-primary-light);">← Back to Dashboard</a>
-    </div>
+<!-- Subject grid by grade -->
+{% for grade in grade_list %}
+<div class="section-header">
+    <h2 class="section-title">Grade {{ grade }}</h2>
 </div>
+<div class="subjects-grid">
+    {% for subject in subjects %}
+    {% if subject.grade_level == grade %}
+    <a href="{% url 'admin-subject-detail' subject.subject_id %}" class="subject-card subject-card-{{ subject.subject_code }}" style="text-decoration:none; display:block;">
+        <div class="subject-card-icon">
+            {% if subject.subject_code == 'english' %}📖
+            {% elif subject.subject_code == 'math' %}➗
+            {% elif subject.subject_code == 'science' %}🔬
+            {% elif subject.subject_code == 'filipino' %}🏳️
+            {% endif %}
+        </div>
+        <div class="subject-card-info">
+            <div class="subject-card-name" style="color:var(--text-primary);">{{ subject.name }}</div>
+            <div class="subject-card-teacher" style="color:var(--text-secondary);">
+                {% if subject.teacher %}{{ subject.teacher.full_name }}{% else %}<em>No teacher assigned</em>{% endif %}
+            </div>
+            <div class="subject-card-stats" style="color:var(--text-secondary);">
+                <span>{{ subject.enrollments.count }} students enrolled</span>
+            </div>
+        </div>
+        <span class="badge badge-grade">Grade {{ subject.grade_level }}</span>
+    </a>
+    {% endif %}
+    {% endfor %}
+</div>
+{% endfor %}
 {% endblock %}

@@ -1,0 +1,247 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% block title %}Create Quiz{% endblock %}
+{% block page_title %}Create New Quiz{% endblock %}
+{% block breadcrumb %}Teacher / <a href="{% url 'teacher-quizzes' %}">Quizzes</a> / Create{% endblock %}
+
+{% block sidebar_nav %}
+<a href="{% url 'teacher-dashboard' %}" class="nav-item">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    <span>Overview</span>
+</a>
+<a href="{% url 'teacher-quizzes' %}" class="nav-item active">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    <span>My Quizzes</span>
+</a>
+<a href="{% url 'teacher-students' %}" class="nav-item">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+    <span>My Students</span>
+</a>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.builder-layout { display: grid; grid-template-columns: 380px 1fr; gap: 24px; align-items: start; }
+.builder-settings { position: sticky; top: 88px; }
+.questions-panel { display: flex; flex-direction: column; gap: 16px; }
+
+.question-block {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 24px;
+    position: relative;
+    animation: slideIn 0.25s ease;
+}
+@keyframes slideIn { from { opacity:0; transform: translateY(-8px); } to { opacity:1; transform: translateY(0); } }
+
+.question-num {
+    font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .08em; color: var(--color-primary-light); margin-bottom: 12px;
+    display: flex; justify-content: space-between; align-items: center;
+}
+.question-block textarea {
+    width: 100%; background: var(--bg-input); border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm); color: var(--text-primary); padding: 12px 14px;
+    font-family: inherit; font-size: 0.9375rem; resize: vertical; min-height: 80px;
+    transition: border-color .2s;
+}
+.question-block textarea:focus { outline: none; border-color: var(--color-primary); }
+
+.choices-grid { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+.choice-row { display: flex; align-items: center; gap: 10px; }
+.choice-radio { accent-color: var(--color-primary); width: 18px; height: 18px; cursor: pointer; flex-shrink: 0; }
+.choice-input {
+    flex: 1; background: var(--bg-input); border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm); color: var(--text-primary); padding: 10px 12px;
+    font-family: inherit; font-size: 0.875rem; transition: border-color .2s;
+}
+.choice-input:focus { outline: none; border-color: var(--color-primary); }
+.choice-label { width: 28px; height: 28px; border-radius: 50%; background: var(--bg-input);
+    display: flex; align-items: center; justify-content: center; font-size: 0.75rem;
+    font-weight: 700; color: var(--text-muted); flex-shrink: 0; }
+
+.remove-question-btn {
+    background: none; border: none; color: var(--text-muted); cursor: pointer;
+    padding: 4px; border-radius: 4px; transition: color .2s;
+}
+.remove-question-btn:hover { color: #f87171; }
+
+.add-question-btn {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    padding: 16px; border: 2px dashed var(--border-color); border-radius: var(--radius-md);
+    color: var(--text-muted); font-size: 0.9375rem; font-weight: 500;
+    cursor: pointer; background: none; width: 100%; transition: var(--transition);
+}
+.add-question-btn:hover { border-color: var(--color-primary); color: var(--color-primary-light); }
+
+.form-label { font-size: 0.8125rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block; }
+.form-input, .form-select, .form-textarea {
+    width: 100%; background: var(--bg-input); border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm); color: var(--text-primary);
+    padding: 10px 14px; font-family: inherit; font-size: 0.875rem;
+    transition: border-color .2s; appearance: none;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus { outline: none; border-color: var(--color-primary); }
+.form-textarea { resize: vertical; min-height: 80px; }
+.form-group { margin-bottom: 18px; }
+
+.toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border-color); }
+.toggle-row:last-child { border-bottom: none; }
+.toggle-label { font-size: 0.875rem; color: var(--text-secondary); }
+.toggle { position: relative; width: 40px; height: 22px; }
+.toggle input { opacity:0; width:0; height:0; }
+.toggle-slider {
+    position: absolute; cursor: pointer; inset: 0;
+    background: var(--bg-input); border-radius: 22px; transition: .3s;
+}
+.toggle-slider::before {
+    content: ''; position: absolute; width: 16px; height: 16px;
+    border-radius: 50%; background: white; left: 3px; top: 3px; transition: .3s;
+}
+.toggle input:checked + .toggle-slider { background: var(--color-primary); }
+.toggle input:checked + .toggle-slider::before { transform: translateX(18px); }
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+<form method="post" id="quizForm">
+{% csrf_token %}
+<div class="builder-layout">
+
+    <!-- ─── Left: Quiz Settings ─── -->
+    <div class="builder-settings">
+        <div class="card">
+            <div class="card-header"><h3>Quiz Settings</h3></div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label class="form-label">Title *</label>
+                    <input type="text" name="title" class="form-input" placeholder="e.g. Chapter 1 Quiz" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea name="description" class="form-textarea" placeholder="Optional short description..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Subject *</label>
+                    <select name="subject" class="form-select" required>
+                        <option value="">Select subject...</option>
+                        {% for subject in my_subjects %}
+                        <option value="{{ subject.subject_id }}">{{ subject.name }} (Grade {{ subject.grade_level }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Quiz Type</label>
+                    <select name="quiz_type" class="form-select">
+                        <option value="regular">Regular Quiz</option>
+                        <option value="self_assessment">Self-Assessment</option>
+                        <option value="final_exam">Final Quiz</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Time Limit (minutes, 0 = unlimited)</label>
+                    <input type="number" name="time_limit" class="form-input" value="0" min="0" max="180">
+                </div>
+
+                <div class="toggle-row">
+                    <span class="toggle-label">Publish (visible to students)</span>
+                    <label class="toggle">
+                        <input type="checkbox" name="is_active">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <!-- Multiple attempts feature removed by request -->
+                <input type="hidden" name="allow_multiple_attempts" value="off">
+                <div class="toggle-row">
+                    <span class="toggle-label">Show correct answers after submit</span>
+                    <label class="toggle">
+                        <input type="checkbox" name="show_answers_after_submit" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" class="btn-primary-action" style="width:100%; margin-top:16px; justify-content:center; padding:14px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            Save Quiz
+        </button>
+    </div>
+
+    <!-- ─── Right: Questions Builder ─── -->
+    <div>
+        <div class="questions-panel" id="questionsPanel">
+            <!-- Questions injected here by JS -->
+        </div>
+
+        <button type="button" class="add-question-btn" id="addQuestionBtn" style="margin-top:16px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Question
+        </button>
+    </div>
+
+</div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    let questionCount = 0;
+    const panel = document.getElementById('questionsPanel');
+    const addBtn = document.getElementById('addQuestionBtn');
+    const letters = ['A','B','C','D'];
+
+    function addQuestion() {
+        const idx = questionCount++;
+        const div = document.createElement('div');
+        div.className = 'question-block';
+        div.dataset.idx = idx;
+        div.innerHTML = `
+            <div class="question-num">
+                Question ${idx + 1}
+                <button type="button" class="remove-question-btn" title="Remove question">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                </button>
+            </div>
+            <textarea name="questions[${idx}][text]" placeholder="Enter your question here..." required></textarea>
+            <div style="font-size:0.75rem;color:var(--text-muted);margin-top:12px;margin-bottom:8px;">Select the correct answer by clicking the circle next to it</div>
+            <div class="choices-grid">
+                ${letters.map((l, ci) => `
+                    <div class="choice-row">
+                        <span class="choice-label">${l}</span>
+                        <input type="radio" class="choice-radio" name="questions[${idx}][correct]" value="${ci}" required>
+                        <input type="text" class="choice-input" name="questions[${idx}][choices][${ci}]" placeholder="Choice ${l}" required>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+        div.querySelector('.remove-question-btn').addEventListener('click', () => {
+            div.remove();
+            renumberQuestions();
+        });
+        panel.appendChild(div);
+        div.querySelector('textarea').focus();
+        renumberQuestions();
+    }
+
+    function renumberQuestions() {
+        panel.querySelectorAll('.question-block').forEach((block, i) => {
+            const num = block.querySelector('.question-num');
+            const removeBtn = num.querySelector('.remove-question-btn');
+            num.childNodes[0].textContent = `Question ${i + 1} `;
+            // Reindex field names
+            const oldIdx = parseInt(block.dataset.idx);
+            block.dataset.idx = i;
+            block.querySelectorAll('[name]').forEach(el => {
+                el.name = el.name.replace(/questions\[\d+\]/, `questions[${i}]`);
+            });
+        });
+    }
+
+    addBtn.addEventListener('click', addQuestion);
+    // Start with one question
+    addQuestion();
+})();
+</script>
+{% endblock %}

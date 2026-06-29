@@ -8,8 +8,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'css/main.css' %}">
-    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+    <link rel="stylesheet" href="{% static 'css/main.css' %}?v={% now 'U' %}">
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v={% now 'U' %}">
     {% block extra_css %}{% endblock %}
 </head>
 <body class="dashboard-page">
@@ -34,11 +34,6 @@
                 </div>
                 <span class="brand-text">QuizWise</span>
             </div>
-            <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>
-                </svg>
-            </button>
         </div>
 
         <nav class="sidebar-nav">
@@ -50,10 +45,10 @@
                 <div class="user-avatar">{{ request.user.first_name|first }}{{ request.user.last_name|first }}</div>
                 <div class="user-info">
                     <div class="user-name">{{ request.user.full_name }}</div>
-                    <div class="user-role badge-{{ request.user.role }}">{{ request.user.get_role_display }}</div>
+                    <div class="user-role">{{ request.user.get_role_display }}</div>
                 </div>
             </div>
-            <a href="{% url 'logout' %}" class="logout-btn" id="logoutBtn">
+            <a href="{% url 'logout' %}" class="logout-btn">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
                     <polyline points="16,17 21,12 16,7"/>
@@ -65,11 +60,21 @@
     </aside>
 
     <!-- Main Content -->
-    <main class="main-content">
+    <main class="main-content" id="mainContent">
         <div class="topbar">
             <div class="topbar-left">
-                <h1 class="page-title">{% block page_title %}Dashboard{% endblock %}</h1>
-                <div class="breadcrumb">{% block breadcrumb %}{% endblock %}</div>
+                <!-- Hamburger always lives in the topbar — always clickable -->
+                <button class="topbar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="3" y1="12" x2="21" y2="12"/>
+                        <line x1="3" y1="6" x2="21" y2="6"/>
+                        <line x1="3" y1="18" x2="21" y2="18"/>
+                    </svg>
+                </button>
+                <div class="topbar-title-group">
+                    <h1 class="page-title">{% block page_title %}Dashboard{% endblock %}</h1>
+                    <div class="breadcrumb">{% block breadcrumb %}{% endblock %}</div>
+                </div>
             </div>
             <div class="topbar-right">
                 {% block topbar_actions %}{% endblock %}

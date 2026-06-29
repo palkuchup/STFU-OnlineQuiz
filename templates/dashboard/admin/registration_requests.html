@@ -1,11 +1,115 @@
 {% extends 'dashboard/base_dashboard.html' %}
 {% block title %}Registration Requests{% endblock %}
 {% block page_title %}Registration Requests{% endblock %}
+{% block breadcrumb %}<a href="{% url 'admin-dashboard' %}" style="color: inherit; text-decoration: none;">Admin</a> <span style="margin: 0 8px;">/</span> <a href="{% url 'admin-reg-requests' %}" style="color: inherit; text-decoration: none;">Requests</a>{% endblock %}
+
+{% block sidebar_nav %}
+<a href="{% url 'admin-dashboard' %}" class="nav-item">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    <span>Overview</span>
+</a>
+<a href="{% url 'admin-users' %}" class="nav-item">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    <span>User Management</span>
+</a>
+<a href="{% url 'admin-subjects' %}" class="nav-item">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+    <span>Subjects</span>
+</a>
+<a href="{% url 'admin-reg-requests' %}" class="nav-item active">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+    <span>Requests</span>
+    {% if pending_count > 0 %}<span class="nav-badge">{{ pending_count }}</span>{% endif %}
+</a>
+<a href="/admin/" target="_blank" class="nav-item">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41"/><path d="M4.93 19.07l1.41-1.41"/><path d="M19.07 19.07l-1.41-1.41"/><path d="M4.93 4.93l1.41 1.41"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/></svg>
+    <span>Django Admin</span>
+</a>
+{% endblock %}
+
 {% block dashboard_content %}
-<div class="card">
-    <div class="card-body">
-        <p>This is a placeholder for the Registration Requests page where you review student uploaded IDs and approve them.</p>
-        <a href="{% url 'admin-dashboard' %}" class="btn btn-primary" style="color: var(--color-primary-light);">← Back to Dashboard</a>
+<!-- Status Filter -->
+<div class="filter-tabs" style="margin-bottom: 24px;">
+    <a href="{% url 'admin-reg-requests' %}?status=pending" class="filter-tab {% if status_filter == 'pending' %}active{% endif %}">
+        Requests {% if pending_count > 0 %}<span class="tab-count">{{ pending_count }}</span>{% endif %}
+    </a>
+    <a href="{% url 'admin-reg-requests' %}?status=approved" class="filter-tab {% if status_filter == 'approved' %}active{% endif %}">Approved</a>
+    <a href="{% url 'admin-reg-requests' %}?status=rejected" class="filter-tab {% if status_filter == 'rejected' %}active{% endif %}">Rejected</a>
+</div>
+
+<div class="card" style="border-radius: 20px; border: none; box-shadow: var(--shadow-sm);">
+    <div class="card-body" style="padding: 0;">
+        <div class="table-wrapper">
+            <table class="data-table" style="width: 100%; text-align: left; border-collapse: collapse;">
+                <thead>
+                    <tr style="border-bottom: 1px solid #f1f5f9; color: var(--text-secondary); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                        <th style="padding: 20px 24px;">Identity</th>
+                        <th style="padding: 20px 24px;">Role</th>
+                        <th style="padding: 20px 24px;">Info / Department</th>
+                        <th style="padding: 20px 24px;">Submitted</th>
+                        <th style="padding: 20px 24px;">Status</th>
+                        <th style="padding: 20px 24px; text-align: right;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req in requests %}
+                    <tr style="border-bottom: 1px solid #f8fafc; transition: background 0.2s;">
+                        <td style="padding: 20px 24px;">
+                            <div style="font-weight: 700; color: var(--text-primary);">
+                                {% if req.user_info %}
+                                    {{ req.user_info.first_name }} {{ req.user_info.last_name }}
+                                {% else %}
+                                    Unknown User
+                                {% endif %}
+                            </div>
+                            <div style="font-size: 0.85rem; color: var(--text-secondary); font-family: monospace; margin-top: 4px;">{{ req.school_id }}</div>
+                        </td>
+                        <td style="padding: 20px 24px;">
+                            <span class="badge {% if req.user_info and req.user_info.role == 1 %}badge-secondary{% else %}badge-grade{% endif %}" style="font-size:0.75rem;">
+                                {% if req.user_info %}
+                                    {{ req.user_info.get_role_display|upper }}
+                                {% else %}
+                                    UNKNOWN
+                                {% endif %}
+                            </span>
+                        </td>
+                        <td style="padding: 20px 24px; font-size: 0.9rem; font-style: italic; color: var(--text-secondary);">
+                            {% if req.user_info and req.user_info.role == 2 %}
+                                Grade {{ req.grade_level|default:"None" }} Student
+                            {% elif req.user_info and req.user_info.role == 1 %}
+                                Teacher
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td style="padding: 20px 24px; font-size: 0.9rem; color: var(--text-secondary);">
+                            {{ req.submitted_at|date:"n/j/Y" }}
+                        </td>
+                        <td style="padding: 20px 24px;">
+                            <span class="badge 
+                                {% if req.status == 'pending' %}badge-pending
+                                {% elif req.status == 'approved' %}badge-success
+                                {% else %}badge-danger{% endif %}" 
+                                style="font-size:0.75rem; border-radius: 12px; padding: 4px 12px;">
+                                {{ req.status|upper }}
+                            </span>
+                        </td>
+                        <td style="padding: 20px 24px; text-align: right;">
+                            <a href="{% url 'admin-review-request' req.request_id %}" class="btn" style="background: #f1f5f9; color: var(--color-primary); border-radius: 8px; font-weight: 700; padding: 8px 16px; text-decoration: none;">
+                                Review Details
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" style="padding: 48px; text-align: center; color: var(--text-secondary);">
+                            No {{ status_filter }} registration requests found.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 {% endblock %}

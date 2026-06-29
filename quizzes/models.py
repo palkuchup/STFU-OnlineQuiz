@@ -7,10 +7,12 @@ from subjects.models import Subject
 class Quiz(models.Model):
     QUIZ_TYPE_REGULAR = 'regular'
     QUIZ_TYPE_SELF_ASSESSMENT = 'self_assessment'
+    QUIZ_TYPE_FINAL_EXAM = 'final_exam'
 
     QUIZ_TYPE_CHOICES = [
         (QUIZ_TYPE_REGULAR, 'Regular Quiz'),
         (QUIZ_TYPE_SELF_ASSESSMENT, 'Self-Assessment'),
+        (QUIZ_TYPE_FINAL_EXAM, 'Final Quiz'),
     ]
 
     quiz_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

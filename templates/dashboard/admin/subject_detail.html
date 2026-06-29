@@ -1,0 +1,105 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% block title %}Subject Details - {{ subject.name }}{% endblock %}
+{% block page_title %}{{ subject.name }}{% endblock %}
+{% block breadcrumb %}
+    <a href="{% url 'admin-dashboard' %}" style="color: inherit; text-decoration: none;">Admin</a> <span style="margin: 0 8px;">/</span> 
+    <a href="{% url 'admin-subjects' %}" style="color: inherit; text-decoration: none;">Subjects</a> <span style="margin: 0 8px;">/</span>
+    {{ subject.name }}
+{% endblock %}
+
+{% block sidebar_nav %}
+<a href="{% url 'admin-dashboard' %}" class="nav-item">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    <span>Overview</span>
+</a>
+<a href="{% url 'admin-users' %}" class="nav-item">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    <span>Users</span>
+</a>
+<a href="{% url 'admin-subjects' %}" class="nav-item active">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+    <span>Subjects</span>
+</a>
+<a href="{% url 'admin-reg-requests' %}" class="nav-item">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+    <span>Requests</span>
+</a>
+<a href="/admin/" target="_blank" class="nav-item">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41"/><path d="M4.93 19.07l1.41-1.41"/><path d="M19.07 19.07l-1.41-1.41"/><path d="M4.93 4.93l1.41 1.41"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/></svg>
+    <span>Django Admin</span>
+</a>
+{% endblock %}
+
+{% block dashboard_content %}
+<div style="display: grid; grid-template-columns: 1fr 2fr; gap: 24px; align-items: start;">
+    <!-- Subject Info -->
+    <div class="card" style="border-radius: 20px; border: none; box-shadow: var(--shadow-md); padding: 32px;">
+        <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px;">
+            <div style="width: 56px; height: 56px; border-radius: 16px; background: rgba(59, 130, 246, 0.1); color: #3b82f6; display: flex; align-items: center; justify-content: center; font-size: 24px;">
+                {% if subject.subject_code == 'english' %}📖
+                {% elif subject.subject_code == 'math' %}➗
+                {% elif subject.subject_code == 'science' %}🔬
+                {% elif subject.subject_code == 'filipino' %}🏳️
+                {% else %}📚{% endif %}
+            </div>
+            <div>
+                <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--text-primary); margin: 0;">{{ subject.name }}</h3>
+                <span class="badge badge-grade" style="margin-top: 4px; display: inline-block;">Grade {{ subject.grade_level }}</span>
+            </div>
+        </div>
+
+        <div style="margin-bottom: 24px;">
+            <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 4px;">Assigned Teacher</div>
+            <div style="font-weight: 800; color: var(--text-primary); font-size: 1.1rem;">
+                {% if subject.teacher %}{{ subject.teacher.full_name }}{% else %}<em>No teacher assigned</em>{% endif %}
+            </div>
+        </div>
+
+        <div style="margin-bottom: 24px;">
+            <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 4px;">Students Enrolled</div>
+            <div style="font-weight: 800; color: var(--text-primary); font-size: 1.1rem;">
+                {{ enrollments.count }}
+            </div>
+        </div>
+
+        <div>
+            <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 4px;">Total Quizzes</div>
+            <div style="font-weight: 800; color: var(--text-primary); font-size: 1.1rem;">
+                {{ quizzes.count }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Enrolled Students Table -->
+    <div class="card" style="border-radius: 20px; border: none; box-shadow: var(--shadow-md); padding: 32px;">
+        <h3 style="font-size: 1.1rem; font-weight: 800; color: var(--text-primary); margin-bottom: 24px;">Enrolled Students</h3>
+        <div class="table-wrapper">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Student Name</th>
+                        <th>School ID</th>
+                        <th>Enrollment Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for enrollment in enrollments %}
+                    <tr>
+                        <td>
+                            <div class="user-cell">
+                                <div class="user-avatar-sm">{{ enrollment.student.first_name|first }}{{ enrollment.student.last_name|first }}</div>
+                                {{ enrollment.student.full_name }}
+                            </div>
+                        </td>
+                        <td><code>{{ enrollment.student.school_id }}</code></td>
+                        <td class="text-muted">{{ enrollment.enrolled_at|date:"M d, Y" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="3" class="text-center text-muted" style="padding:40px;">No students enrolled yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

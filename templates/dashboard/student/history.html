@@ -1,11 +1,62 @@
 {% extends 'dashboard/base_dashboard.html' %}
 {% block title %}Quiz History{% endblock %}
 {% block page_title %}Quiz History{% endblock %}
+{% block breadcrumb %}Student / History{% endblock %}
+
+{% block sidebar_nav %}
+<a href="{% url 'student-dashboard' %}" class="nav-item">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    <span>Overview</span>
+</a>
+<a href="{% url 'student-quizzes' %}" class="nav-item">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    <span>Available Quizzes</span>
+</a>
+<a href="{% url 'student-history' %}" class="nav-item active">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4"/></svg>
+    <span>Quiz History</span>
+</a>
+{% endblock %}
+
 {% block dashboard_content %}
 <div class="card">
-    <div class="card-body">
-        <p>This is a placeholder for the Student Quiz History page.</p>
-        <a href="{% url 'student-dashboard' %}" class="btn btn-primary" style="color: var(--color-primary-light);">← Back to Dashboard</a>
+    <div class="card-body" style="padding:0;">
+        <div class="table-wrapper">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Quiz</th>
+                        <th>Subject</th>
+                        <th>Score</th>
+                        <th>Percentage</th>
+                        <th>Result</th>
+                        <th>Date Taken</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for attempt in attempts %}
+                    <tr>
+                        <td><strong>{{ attempt.quiz.title }}</strong></td>
+                        <td>{{ attempt.quiz.subject.name }}</td>
+                        <td>{{ attempt.score }} / {{ attempt.total_questions }}</td>
+                        <td>
+                            <div class="score-badge {% if attempt.percentage >= 75 %}score-pass{% else %}score-fail{% endif %}">
+                                {{ attempt.percentage|floatformat:1 }}%
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge {% if attempt.percentage >= 75 %}badge-success{% else %}badge-danger{% endif %}">
+                                {% if attempt.percentage >= 75 %}Passed{% else %}Failed{% endif %}
+                            </span>
+                        </td>
+                        <td class="text-muted">{{ attempt.completed_at|date:"M d, Y H:i" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="text-center text-muted" style="padding:40px;">No quiz attempts yet. Take a quiz to see your history!</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 {% endblock %}

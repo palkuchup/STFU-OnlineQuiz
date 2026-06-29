@@ -1,11 +1,81 @@
 {% extends 'dashboard/base_dashboard.html' %}
 {% block title %}My Students{% endblock %}
 {% block page_title %}My Students{% endblock %}
+{% block breadcrumb %}Teacher / Students{% endblock %}
+
+{% block sidebar_nav %}
+<a href="{% url 'teacher-dashboard' %}" class="nav-item">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    <span>Overview</span>
+</a>
+<a href="{% url 'teacher-quizzes' %}" class="nav-item">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    <span>My Quizzes</span>
+</a>
+<a href="{% url 'teacher-students' %}" class="nav-item active">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+    <span>My Students</span>
+</a>
+{% endblock %}
+
 {% block dashboard_content %}
-<div class="card">
-    <div class="card-body">
-        <p>This is a placeholder for the Teacher Students page where you submit final grades.</p>
-        <a href="{% url 'teacher-dashboard' %}" class="btn btn-primary" style="color: var(--color-primary-light);">← Back to Dashboard</a>
+{% regroup enrollments by subject.grade_level as grade_groups %}
+{% for grade_group in grade_groups %}
+<div class="section-header">
+    <h2 class="section-title">Grade {{ grade_group.grouper }} — {{ grade_group.list.0.subject.name }}</h2>
+</div>
+<div class="card" style="margin-bottom: 24px;">
+    <div class="card-body" style="padding:0;">
+        <div class="table-wrapper">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Student</th>
+                        <th>School ID</th>
+                        <th>Section</th>
+                        <th>Final Grade</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for enrollment in grade_group.list %}
+                    <tr>
+                        <td><div class="user-cell"><div class="user-avatar-sm">{{ enrollment.student.first_name|first }}{{ enrollment.student.last_name|first }}</div>{{ enrollment.student.full_name }}</div></td>
+                        <td><code>{{ enrollment.student.school_id }}</code></td>
+                        <td>{% if enrollment.student.student_profile %}{{ enrollment.student.student_profile.section }}{% else %}—{% endif %}</td>
+                        <td>
+                            {% if enrollment.final_grade %}
+                            <div class="score-badge {% if enrollment.final_grade >= enrollment.subject.passing_score %}score-pass{% else %}score-fail{% endif %}">
+                                {{ enrollment.final_grade|floatformat:1 }}%
+                            </div>
+                            {% else %}
+                            <span class="text-muted">Not yet graded</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if enrollment.is_promoted %}
+                            <span class="badge badge-success">Promoted ↑</span>
+                            {% elif enrollment.final_grade %}
+                            <span class="badge badge-danger">Not Promoted</span>
+                            {% else %}
+                            <span class="badge badge-secondary">Enrolled</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
+{% empty %}
+<div class="card">
+    <div class="card-body">
+        <div class="empty-state">
+            <span class="empty-icon">👥</span>
+            <p>No students enrolled in your subjects yet.</p>
+        </div>
+    </div>
+</div>
+{% endfor %}
 {% endblock %}

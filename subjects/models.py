@@ -47,7 +47,7 @@ class Subject(models.Model):
         limit_choices_to={'role': 1}  # ROLE_TEACHER
     )
     passing_score = models.IntegerField(
-        default=75,
+        default=50,
         help_text='Minimum score (0-100) required to advance to next grade level'
     )
     created_at = models.DateTimeField(auto_now_add=True)

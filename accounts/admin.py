@@ -23,6 +23,22 @@ class StudentProfileInline(admin.StackedInline):
     extra = 0
 
 
+from django import forms
+
+class PreRegisteredUserForm(forms.ModelForm):
+    class Meta:
+        model = CustomUser
+        fields = ('school_id', 'first_name', 'last_name', 'role')
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.username = user.school_id
+        user.set_unusable_password()
+        if commit:
+            user.save()
+        return user
+
+
 # Base admin for the proxy models
 class BaseRoleUserAdmin(UserAdmin):
     ordering = ('-created_at',)
@@ -34,10 +50,12 @@ class BaseRoleUserAdmin(UserAdmin):
         ('Role & Permissions', {'fields': ('role', 'is_active', 'is_staff', 'is_superuser')}),
         ('Important Dates', {'fields': ('last_login',)}),
     )
+    
+    add_form = PreRegisteredUserForm
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('school_id', 'username', 'first_name', 'last_name', 'role', 'password1', 'password2'),
+            'fields': ('school_id', 'first_name', 'last_name', 'role'),
         }),
     )
 
@@ -103,22 +121,19 @@ class RegistrationRequestAdmin(admin.ModelAdmin):
     def approve_requests(self, request, queryset):
         approved_count = 0
         for reg in queryset.filter(status=RegistrationRequest.STATUS_PENDING):
-            # Create the user account
-            if CustomUser.objects.filter(school_id=reg.school_id).exists():
-                self.message_user(request, f"School ID {reg.school_id} already exists.", messages.WARNING)
+            # Fetch the pre-registered user account
+            user = CustomUser.objects.filter(school_id=reg.school_id).first()
+            if not user:
+                self.message_user(request, f"School ID {reg.school_id} not found in pre-registered list.", messages.WARNING)
                 continue
 
-            user = CustomUser.objects.create_user(
-                school_id=reg.school_id,
-                username=reg.school_id,
-                first_name=reg.first_name,
-                last_name=reg.last_name,
-                password=reg.temp_password,
-                role=CustomUser.ROLE_STUDENT,
-                is_active=True,
-            )
+            if user.has_usable_password():
+                self.message_user(request, f"School ID {reg.school_id} is already fully registered.", messages.WARNING)
+                continue
+
             # Set the raw password (temp_password is stored as plain text from registration)
             user.set_password(reg.temp_password)
+            user.is_active = True
             user.save()
 
             # Create StudentProfile
@@ -133,9 +148,10 @@ class RegistrationRequestAdmin(admin.ModelAdmin):
             )
 
             # Auto-enroll in all 4 subjects of their grade level
-            subjects = Subject.objects.filter(grade_level=reg.grade_level)
-            for subject in subjects:
-                Enrollment.objects.get_or_create(student=user, subject=subject)
+            if reg.grade_level:
+                subjects = Subject.objects.filter(grade_level=reg.grade_level)
+                for subject in subjects:
+                    Enrollment.objects.get_or_create(student=user, subject=subject)
 
             # Mark request as approved
             reg.status = RegistrationRequest.STATUS_APPROVED
