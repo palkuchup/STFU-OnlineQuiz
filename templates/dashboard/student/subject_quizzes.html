@@ -1,0 +1,84 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% block title %}{{ subject.name }} — Available Quizzes{% endblock %}
+{% block page_title %}{{ subject.name }}{% endblock %}
+{% block breadcrumb %}<a href="{% url 'student-dashboard' %}">Student</a> / <a href="{% url 'student-quizzes' %}">Available Quizzes</a> / {{ subject.name }}{% endblock %}
+
+{% block sidebar_nav %}
+<a href="{% url 'student-dashboard' %}" class="nav-item">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    <span>Overview</span>
+</a>
+<a href="{% url 'student-quizzes' %}" class="nav-item active">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    <span>Available Quizzes</span>
+</a>
+<a href="{% url 'student-history' %}" class="nav-item">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4"/></svg>
+    <span>Quiz History</span>
+</a>
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="welcome-banner" style="margin-bottom:24px;">
+    <div class="welcome-text">
+        <h2>{{ subject.name }}</h2>
+        <p>Grade {{ subject.grade_level }}</p>
+    </div>
+</div>
+
+{% if quiz_data %}
+<div class="quiz-grid">
+    {% for quiz_info in quiz_data %}
+    <div class="quiz-card" style="opacity: {% if quiz_info.is_completed %}0.85{% else %}1{% endif %};">
+        <div class="quiz-card-header">
+            <div class="quiz-card-subject">
+                <span class="subject-dot subject-dot-{{ quiz_info.quiz.subject.subject_code }}"></span>
+                {{ quiz_info.quiz.subject.name }}
+            </div>
+            {% if quiz_info.is_completed %}
+            <span class="badge badge-success" style="display: flex; align-items: center; gap: 6px;">
+                ✓ Done
+            </span>
+            {% endif %}
+            <span class="badge badge-grade">Grade {{ quiz_info.quiz.subject.grade_level }}</span>
+        </div>
+        <h3 class="quiz-card-title">{{ quiz_info.quiz.title }}</h3>
+        <p class="quiz-card-desc">{{ quiz_info.quiz.description|truncatechars:120 }}</p>
+        <div class="quiz-card-meta">
+            <span class="tag tag-{{ quiz_info.quiz.quiz_type }}">{{ quiz_info.quiz.get_quiz_type_display }}</span>
+            {% if quiz_info.quiz.time_limit > 0 %}
+            <span class="tag">⏱ {{ quiz_info.quiz.time_limit }} min</span>
+            {% endif %}
+            <span class="tag">{{ quiz_info.quiz.question_count }} questions</span>
+            {% if quiz_info.is_completed and quiz_info.attempt %}
+            <span class="tag" style="background: var(--color-primary-light); color: var(--color-primary);">
+                {{ quiz_info.attempt.percentage|floatformat:1 }}%
+            </span>
+            {% endif %}
+        </div>
+        <div class="quiz-card-footer">
+            <span class="text-muted">by {{ quiz_info.quiz.created_by.full_name }}</span>
+            {% if quiz_info.is_completed %}
+                <a href="{% url 'student-quiz-result' quiz_info.attempt.attempt_id %}" class="btn-primary-action btn-sm" style="background: var(--bg-input); color: var(--text-primary);">
+                    Preview →
+                </a>
+            {% else %}
+                <a href="{% url 'student-take-quiz' quiz_info.quiz.quiz_id %}" class="btn-primary-action btn-sm">
+                    Take Quiz →
+                </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card">
+    <div class="card-body">
+        <div class="empty-state">
+            <span class="empty-icon">📝</span>
+            <p>No quizzes available right now for this subject. Check back later!</p>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

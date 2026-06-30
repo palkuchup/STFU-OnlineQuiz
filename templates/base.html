@@ -14,7 +14,17 @@
 </head>
 <body class="{% block body_class %}{% endblock %}">
     {% block content %}{% endblock %}
+    <div class="toast-container" id="toast-container"></div>
     <script src="{% static 'js/main.js' %}"></script>
     {% block extra_js %}{% endblock %}
+    {% if messages %}
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            {% for message in messages %}
+            showToast('{{ message|escapejs }}', '{{ message.tags|default:"info" }}');
+            {% endfor %}
+        });
+    </script>
+    {% endif %}
 </body>
 </html>

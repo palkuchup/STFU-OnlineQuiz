@@ -1,7 +1,7 @@
 {% extends 'dashboard/base_dashboard.html' %}
-{% block title %}Create Quiz{% endblock %}
-{% block page_title %}Create New Quiz{% endblock %}
-{% block breadcrumb %}Teacher / <a href="{% url 'teacher-quizzes' %}">Quizzes</a> / Create{% endblock %}
+{% block title %}{% if is_edit %}Edit Quiz{% else %}Create Quiz{% endif %}{% endblock %}
+{% block page_title %}{% if is_edit %}Edit Quiz{% else %}Create New Quiz{% endif %}{% endblock %}
+{% block breadcrumb %}Teacher / <a href="{% url 'teacher-quizzes' %}">Quizzes</a> / {% if is_edit %}Edit{% else %}Create{% endif %}{% endblock %}
 
 {% block sidebar_nav %}
 <a href="{% url 'teacher-dashboard' %}" class="nav-item">
@@ -115,38 +115,38 @@
             <div class="card-body">
                 <div class="form-group">
                     <label class="form-label">Title *</label>
-                    <input type="text" name="title" class="form-input" placeholder="e.g. Chapter 1 Quiz" required>
+                    <input type="text" name="title" class="form-input" placeholder="e.g. Chapter 1 Quiz" value="{% if is_edit %}{{ quiz.title }}{% endif %}" required>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Description</label>
-                    <textarea name="description" class="form-textarea" placeholder="Optional short description..."></textarea>
+                    <textarea name="description" class="form-textarea" placeholder="Optional short description...">{% if is_edit %}{{ quiz.description }}{% endif %}</textarea>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Subject *</label>
                     <select name="subject" class="form-select" required>
                         <option value="">Select subject...</option>
                         {% for subject in my_subjects %}
-                        <option value="{{ subject.subject_id }}">{{ subject.name }} (Grade {{ subject.grade_level }})</option>
+                        <option value="{{ subject.subject_id }}" {% if is_edit and quiz.subject.subject_id == subject.subject_id %}selected{% endif %}>{{ subject.name }} (Grade {{ subject.grade_level }})</option>
                         {% endfor %}
                     </select>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Quiz Type</label>
                     <select name="quiz_type" class="form-select">
-                        <option value="regular">Regular Quiz</option>
-                        <option value="self_assessment">Self-Assessment</option>
-                        <option value="final_exam">Final Quiz</option>
+                        <option value="regular" {% if is_edit and quiz.quiz_type == 'regular' %}selected{% endif %}>Regular Quiz</option>
+                        <option value="self_assessment" {% if is_edit and quiz.quiz_type == 'self_assessment' %}selected{% endif %}>Self-Assessment</option>
+                        <option value="final_exam" {% if is_edit and quiz.quiz_type == 'final_exam' %}selected{% endif %}>Final Quiz</option>
                     </select>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Time Limit (minutes, 0 = unlimited)</label>
-                    <input type="number" name="time_limit" class="form-input" value="0" min="0" max="180">
+                    <input type="number" name="time_limit" class="form-input" value="{% if is_edit %}{{ quiz.time_limit }}{% else %}0{% endif %}" min="0" max="180">
                 </div>
 
                 <div class="toggle-row">
                     <span class="toggle-label">Publish (visible to students)</span>
                     <label class="toggle">
-                        <input type="checkbox" name="is_active">
+                        <input type="checkbox" name="is_active" {% if is_edit and quiz.is_active %}checked{% endif %}>
                         <span class="toggle-slider"></span>
                     </label>
                 </div>
@@ -155,7 +155,7 @@
                 <div class="toggle-row">
                     <span class="toggle-label">Show correct answers after submit</span>
                     <label class="toggle">
-                        <input type="checkbox" name="show_answers_after_submit" checked>
+                        <input type="checkbox" name="show_answers_after_submit" {% if not is_edit or quiz.show_answers_after_submit %}checked{% endif %}>
                         <span class="toggle-slider"></span>
                     </label>
                 </div>
@@ -164,7 +164,7 @@
 
         <button type="submit" class="btn-primary-action" style="width:100%; margin-top:16px; justify-content:center; padding:14px;">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-            Save Quiz
+            {% if is_edit %}Update Quiz{% else %}Save Quiz{% endif %}
         </button>
     </div>
 
@@ -192,11 +192,23 @@
     const addBtn = document.getElementById('addQuestionBtn');
     const letters = ['A','B','C','D'];
 
-    function addQuestion() {
+    function addQuestion(questionData) {
         const idx = questionCount++;
         const div = document.createElement('div');
         div.className = 'question-block';
         div.dataset.idx = idx;
+        
+        // Find correct choice index if editing
+        let correctIndex = 0;
+        if (questionData) {
+            for (let i = 0; i < questionData.choices.length; i++) {
+                if (questionData.choices[i].is_correct) {
+                    correctIndex = i;
+                    break;
+                }
+            }
+        }
+        
         div.innerHTML = `
             <div class="question-num">
                 Question ${idx + 1}
@@ -204,16 +216,19 @@
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
                 </button>
             </div>
-            <textarea name="questions[${idx}][text]" placeholder="Enter your question here..." required></textarea>
+            <textarea name="questions[${idx}][text]" placeholder="Enter your question here..." required>${questionData ? questionData.text : ''}</textarea>
             <div style="font-size:0.75rem;color:var(--text-muted);margin-top:12px;margin-bottom:8px;">Select the correct answer by clicking the circle next to it</div>
             <div class="choices-grid">
-                ${letters.map((l, ci) => `
+                ${letters.map((l, ci) => {
+                    const choiceText = questionData && questionData.choices[ci] ? questionData.choices[ci].text : '';
+                    const checked = questionData && (ci === correctIndex);
+                    return `
                     <div class="choice-row">
                         <span class="choice-label">${l}</span>
-                        <input type="radio" class="choice-radio" name="questions[${idx}][correct]" value="${ci}" required>
-                        <input type="text" class="choice-input" name="questions[${idx}][choices][${ci}]" placeholder="Choice ${l}" required>
+                        <input type="radio" class="choice-radio" name="questions[${idx}][correct]" value="${ci}" ${checked ? 'checked' : ''} required>
+                        <input type="text" class="choice-input" name="questions[${idx}][choices][${ci}]" placeholder="Choice ${l}" value="${choiceText}" required>
                     </div>
-                `).join('')}
+                `}).join('')}
             </div>
         `;
         div.querySelector('.remove-question-btn').addEventListener('click', () => {
@@ -221,7 +236,9 @@
             renumberQuestions();
         });
         panel.appendChild(div);
-        div.querySelector('textarea').focus();
+        if (!questionData) {
+            div.querySelector('textarea').focus();
+        }
         renumberQuestions();
     }
 
@@ -239,9 +256,32 @@
         });
     }
 
-    addBtn.addEventListener('click', addQuestion);
-    // Start with one question
+    addBtn.addEventListener('click', () => addQuestion());
+    
+    // Load existing questions if editing
+    {% if is_edit %}
+    const existingQuestions = [
+        {% for question in questions %}
+        {
+            text: "{{ question.text|escapejs }}",
+            choices: [
+                {% for choice in question.choices.all %}
+                { text: "{{ choice.text|escapejs }}", is_correct: {% if choice.is_correct %}true{% else %}false{% endif %} },
+                {% endfor %}
+            ]
+        },
+        {% endfor %}
+    ];
+    
+    if (existingQuestions.length > 0) {
+        existingQuestions.forEach(q => addQuestion(q));
+    } else {
+        addQuestion();
+    }
+    {% else %}
+    // Start with one question for create mode
     addQuestion();
+    {% endif %}
 })();
 </script>
 {% endblock %}

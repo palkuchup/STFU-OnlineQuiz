@@ -277,13 +277,103 @@ img { max-width: 100%; }
 }
 .login-footer p { margin-bottom: 12px; }
 .login-note {
-  color: var(--text-muted);
-  font-size: 0.85rem;
-  line-height: 1.5;
-  background: var(--bg-input);
-  padding: 16px;
-  border-radius: var(--radius-md);
-  border: none;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    line-height: 1.5;
+    background: var(--bg-input);
+    padding: 16px;
+    border-radius: var(--radius-md);
+    border: none;
+}
+
+/* Toast Notifications */
+.toast-container {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.toast {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    border-radius: var(--radius-md);
+    font-size: 0.95rem;
+    font-weight: 700;
+    box-shadow: var(--shadow-md);
+    min-width: 280px;
+    animation: slideIn 0.3s ease forwards;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+.toast.toast-error, .toast.toast-danger {
+    background: #FEE2E2;
+    color: #DC2626;
+    border: 2px solid #FECACA;
+}
+
+.toast.toast-success {
+    background: #D1FAE5;
+    color: #059669;
+    border: 2px solid #A7F3D0;
+}
+
+.toast.toast-warning {
+    background: #FEF3C7;
+    color: #D97706;
+    border: 2px solid #FDE68A;
+}
+
+.toast.toast-info {
+    background: #DBEAFE;
+    color: #2563EB;
+    border: 2px solid #BFDBFE;
+}
+
+.toast-icon {
+    font-size: 1.25rem;
+}
+
+.toast-close {
+    margin-left: auto;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.25rem;
+    color: inherit;
+    padding: 0;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+.toast-close:hover {
+    opacity: 1;
 }
 
 /* ── Utilities ──────────────────────────────────────────── */

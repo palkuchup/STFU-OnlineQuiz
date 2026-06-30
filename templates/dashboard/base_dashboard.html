@@ -77,26 +77,29 @@
                 </div>
             </div>
             <div class="topbar-right">
-                {% block topbar_actions %}{% endblock %}
-            </div>
+            {% block topbar_actions %}{% endblock %}
         </div>
+    </div>
 
-        {% if messages %}
-        <div class="messages-container">
-            {% for message in messages %}
-            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
-            {% endfor %}
-        </div>
-        {% endif %}
+    <div class="toast-container" id="toast-container"></div>
 
-        <div class="content-area">
-            {% block dashboard_content %}{% endblock %}
-        </div>
-    </main>
+    <div class="content-area">
+        {% block dashboard_content %}{% endblock %}
+    </div>
+</main>
 </div>
 
 <script src="{% static 'js/main.js' %}"></script>
 <script src="{% static 'js/dashboard.js' %}"></script>
+{% if messages %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  {% for message in messages %}
+  showToast('{{ message|escapejs }}', '{{ message.tags|default:"info" }}');
+  {% endfor %}
+});
+</script>
+{% endif %}
 {% block extra_js %}{% endblock %}
 </body>
 </html>

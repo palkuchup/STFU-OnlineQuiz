@@ -1,7 +1,7 @@
 {% extends 'dashboard/base_dashboard.html' %}
 {% block title %}Available Quizzes{% endblock %}
 {% block page_title %}Available Quizzes{% endblock %}
-{% block breadcrumb %}Student / Quizzes{% endblock %}
+{% block breadcrumb %}<a href="{% url 'student-dashboard' %}">Student</a> / Available Quizzes{% endblock %}
 
 {% block sidebar_nav %}
 <a href="{% url 'student-dashboard' %}" class="nav-item">
@@ -19,39 +19,45 @@
 {% endblock %}
 
 {% block dashboard_content %}
-{% if quizzes %}
-<div class="quiz-grid">
-    {% for quiz in quizzes %}
-    <div class="quiz-card">
-        <div class="quiz-card-header">
-            <div class="quiz-card-subject">
-                <span class="subject-dot subject-dot-{{ quiz.subject.subject_code }}"></span>
-                {{ quiz.subject.name }}
+{% if subject_data %}
+<div class="subject-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+    {% for subject in subject_data %}
+    <a href="{% url 'student-subject-quizzes' subject.subject_id %}" class="card" style="display: block; text-decoration: none; transition: transform 0.2s, box-shadow 0.2s;">
+        <div class="card-body" style="padding: 24px;">
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <div style="width: 72px; height: 72px; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 2.5rem;
+                    {% if subject.subject_code == 'english' %}background: #DBEAFE;{% endif %}
+                    {% if subject.subject_code == 'math' %}background: #FEE2E2;{% endif %}
+                    {% if subject.subject_code == 'science' %}background: #D1FAE5;{% endif %}
+                    {% if subject.subject_code == 'filipino' %}background: #FEF3C7;{% endif %}">
+                    {% if subject.subject_code == 'english' %}📖
+                    {% elif subject.subject_code == 'math' %}➗
+                    {% elif subject.subject_code == 'science' %}🔬
+                    {% else %}🏳️{% endif %}
+                </div>
+                <div style="flex: 1;">
+                    <h3 style="margin: 0; font-size: 1.25rem; font-weight: 800; color: var(--text-primary); line-height: 1.2;">{{ subject.name }}</h3>
+                    <p style="margin: 6px 0 12px 0; color: var(--text-secondary); font-size: 0.95rem;">
+                        {% if subject.teacher %}{{ subject.teacher.full_name }}{% endif %}
+                    </p>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                        <span class="badge badge-grade">Grade {{ subject.grade_level }}</span>
+                        <span class="badge" style="background: var(--bg-input); color: var(--text-secondary);">
+                            {{ subject.quizzes.count }} Quiz{{ subject.quizzes.count|pluralize }}
+                        </span>
+                    </div>
+                </div>
             </div>
-            <span class="badge badge-grade">Grade {{ quiz.subject.grade_level }}</span>
         </div>
-        <h3 class="quiz-card-title">{{ quiz.title }}</h3>
-        <p class="quiz-card-desc">{{ quiz.description|truncatechars:120 }}</p>
-        <div class="quiz-card-meta">
-            <span class="tag tag-{{ quiz.quiz_type }}">{{ quiz.get_quiz_type_display }}</span>
-            {% if quiz.time_limit > 0 %}<span class="tag">⏱ {{ quiz.time_limit }} min</span>{% endif %}
-            <span class="tag">{{ quiz.question_count }} questions</span>
-        </div>
-        <div class="quiz-card-footer">
-            <span class="text-muted">by {{ quiz.created_by.full_name }}</span>
-            <a href="{% url 'student-take-quiz' quiz.quiz_id %}" class="btn-primary-action btn-sm">
-                Take Quiz →
-            </a>
-        </div>
-    </div>
+    </a>
     {% endfor %}
 </div>
 {% else %}
 <div class="card">
     <div class="card-body">
         <div class="empty-state">
-            <span class="empty-icon">📝</span>
-            <p>No quizzes available right now. Check back later!</p>
+            <span class="empty-icon">📚</span>
+            <p>No enrolled subjects yet.</p>
         </div>
     </div>
 </div>

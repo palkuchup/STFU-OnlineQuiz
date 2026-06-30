@@ -1,7 +1,7 @@
 {% extends 'dashboard/base_dashboard.html' %}
 {% block title %}{{ quiz.title }} — Results{% endblock %}
 {% block page_title %}Quiz Results{% endblock %}
-{% block breadcrumb %}Teacher / <a href="{% url 'teacher-quizzes' %}">Quizzes</a> / Results{% endblock %}
+{% block breadcrumb %}<a href="{% url 'teacher-dashboard' %}">Teacher</a> / <a href="{% url 'teacher-quizzes' %}">Quizzes</a> / Results{% endblock %}
 
 {% block sidebar_nav %}
 <a href="{% url 'teacher-dashboard' %}" class="nav-item">
@@ -59,21 +59,27 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for attempt in attempts %}
+                    {% for info in student_data %}
                     <tr>
-                        <td><div class="user-cell"><div class="user-avatar-sm">{{ attempt.student.first_name|first }}{{ attempt.student.last_name|first }}</div>{{ attempt.student.full_name }}</div></td>
-                        <td><code>{{ attempt.student.school_id }}</code></td>
-                        <td>{{ attempt.score }} / {{ attempt.total_questions }}</td>
-                        <td>
-                            <div class="score-badge {% if attempt.percentage >= 75 %}score-pass{% else %}score-fail{% endif %}">
-                                {{ attempt.percentage|floatformat:1 }}%
-                            </div>
-                        </td>
-                        <td><span class="badge {% if attempt.percentage >= 75 %}badge-success{% else %}badge-danger{% endif %}">{% if attempt.percentage >= 75 %}Passed{% else %}Failed{% endif %}</span></td>
-                        <td class="text-muted">{{ attempt.completed_at|date:"M d, Y H:i" }}</td>
+                        <td><div class="user-cell"><div class="user-avatar-sm">{{ info.student.first_name|first }}{{ info.student.last_name|first }}</div>{{ info.student.full_name }}</div></td>
+                        <td><code>{{ info.student.school_id }}</code></td>
+                        {% if info.is_completed %}
+                            <td>{{ info.attempt.score }} / {{ info.attempt.total_questions }}</td>
+                            <td>
+                                <div class="score-badge {% if info.attempt.percentage >= 75 %}score-pass{% else %}score-fail{% endif %}">
+                                    {{ info.attempt.percentage|floatformat:1 }}%
+                                </div>
+                            </td>
+                            <td><span class="badge {% if info.attempt.percentage >= 75 %}badge-success{% else %}badge-danger{% endif %}">{% if info.attempt.percentage >= 75 %}Passed{% else %}Failed{% endif %}</span></td>
+                            <td class="text-muted">{{ info.attempt.completed_at|date:"M d, Y H:i" }}</td>
+                        {% else %}
+                            <td colspan="4">
+                                <span class="badge badge-secondary">Not Taken Yet</span>
+                            </td>
+                        {% endif %}
                     </tr>
                     {% empty %}
-                    <tr><td colspan="6" class="text-center text-muted" style="padding:40px;">No attempts yet for this quiz.</td></tr>
+                    <tr><td colspan="6" class="text-center text-muted" style="padding:40px;">No students enrolled in this subject.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>

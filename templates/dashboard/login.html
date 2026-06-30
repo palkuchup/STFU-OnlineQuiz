@@ -68,17 +68,6 @@
             .photo-upload-input { display: none; }
         </style>
         <div class="login-form-wrapper">
-            {% if messages %}
-            <div class="alert-container">
-                {% for message in messages %}
-                <div class="alert alert-{{ message.tags }}">
-                    <span class="alert-icon">⚠️</span>
-                    {{ message }}
-                </div>
-                {% endfor %}
-            </div>
-            {% endif %}
-
             <!-- Login Section -->
             <div id="loginSection">
                 <div class="login-header">

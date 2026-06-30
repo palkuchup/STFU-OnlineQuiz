@@ -31,6 +31,7 @@
                         <th>Percentage</th>
                         <th>Result</th>
                         <th>Date Taken</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -50,9 +51,14 @@
                             </span>
                         </td>
                         <td class="text-muted">{{ attempt.completed_at|date:"M d, Y H:i" }}</td>
+                        <td>
+                            <a href="{% url 'student-quiz-result' attempt.attempt_id %}" class="btn" style="padding: 6px 12px; border-radius: 8px; border: none; background: var(--color-primary); color: white; font-weight: 600; text-decoration: none; font-size: 0.875rem;">
+                                Review
+                            </a>
+                        </td>
                     </tr>
                     {% empty %}
-                    <tr><td colspan="6" class="text-center text-muted" style="padding:40px;">No quiz attempts yet. Take a quiz to see your history!</td></tr>
+                    <tr><td colspan="7" class="text-center text-muted" style="padding:40px;">No quiz attempts yet. Take a quiz to see your history!</td></tr>
                     {% endfor %}
                 </tbody>
             </table>

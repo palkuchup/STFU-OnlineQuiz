@@ -78,12 +78,12 @@
 <div class="result-layout">
 
     <!-- Hero Score Card -->
-    <div class="result-hero {% if pct >= 75 %}passed{% else %}failed{% endif %}">
-        <span class="result-icon">{% if pct >= 75 %}🎉{% else %}📋{% endif %}</span>
+    <div class="result-hero {% if pct >= 50 %}passed{% else %}failed{% endif %}">
+        <span class="result-icon">{% if pct >= 50 %}🎉{% else %}📋{% endif %}</span>
         <div class="result-label">{{ attempt.quiz.title }}</div>
         <div class="result-score">{{ pct|floatformat:0 }}%</div>
         <div class="result-sub">You answered {{ score }} out of {{ total }} questions correctly</div>
-        <span class="result-verdict">{% if pct >= 75 %}Passed ✓{% else %}Failed — keep studying!{% endif %}</span>
+        <span class="result-verdict">{% if pct >= 50 %}Passed ✓{% else %}Failed — keep studying!{% endif %}</span>
     </div>
 
     <!-- Actions -->

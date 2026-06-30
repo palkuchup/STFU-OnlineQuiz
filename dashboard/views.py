@@ -69,8 +69,15 @@ def register_view(request):
         elif user.has_usable_password():
             errors.append(f'An account with School ID "{school_id}" is already fully registered.')
             
-        if RegistrationRequest.objects.filter(school_id=school_id, status='pending').exists():
-            errors.append(f'A pending registration request for School ID "{school_id}" already exists.')
+        existing_request = RegistrationRequest.objects.filter(school_id=school_id).first()
+        if existing_request:
+            if existing_request.status == RegistrationRequest.STATUS_PENDING:
+                errors.append(f'A pending registration request for School ID "{school_id}" already exists.')
+            elif existing_request.status == RegistrationRequest.STATUS_APPROVED:
+                errors.append(f'A registration request for School ID "{school_id}" has already been approved.')
+            elif existing_request.status == RegistrationRequest.STATUS_REJECTED:
+                # Delete the rejected request to allow re-registration
+                existing_request.delete()
 
         if not request.FILES.get('id_photo_front') or not request.FILES.get('id_photo_back') or not request.FILES.get('selfie_photo'):
             errors.append('All verification photos (Front ID, Back ID, and Selfie) are required.')
@@ -80,9 +87,18 @@ def register_view(request):
                 messages.error(request, error)
             return render(request, 'dashboard/login.html', {'active_tab': 'register'})
         else:
+            # Get grade level and section from pre-registered user if available
+            grade_level = None
+            section = ''
+            if hasattr(user, 'student_profile'):
+                grade_level = user.student_profile.grade_level
+                section = user.student_profile.section
+            
             reg = RegistrationRequest(
                 school_id=school_id,
-                temp_password=password,   # stored plain; hashed on approval
+                temp_password=password,
+                grade_level=grade_level,
+                section=section
             )
             # Optional photo uploads
             if request.FILES.get('id_photo_front'):
@@ -344,17 +360,45 @@ def admin_review_request(request, request_id):
                 user.save()
 
                 if user.role == CustomUser.ROLE_STUDENT:
-                    StudentProfile.objects.create(
-                        user=user,
-                        grade_level=reg.grade_level,
-                        id_photo_front=reg.id_photo_front,
-                        id_photo_back=reg.id_photo_back,
-                        selfie_photo=reg.selfie_photo,
-                        section=reg.section,
-                        is_self_registered=True,
-                    )
-                    if reg.grade_level:
-                        subjects = Subject.objects.filter(grade_level=reg.grade_level)
+                    # Check if student profile already exists
+                    if hasattr(user, 'student_profile'):
+                        profile = user.student_profile
+                        # Update profile with registration request data
+                        if reg.grade_level:
+                            profile.grade_level = reg.grade_level
+                        if reg.section:
+                            profile.section = reg.section
+                        if reg.id_photo_front:
+                            profile.id_photo_front = reg.id_photo_front
+                        if reg.id_photo_back:
+                            profile.id_photo_back = reg.id_photo_back
+                        if reg.selfie_photo:
+                            profile.selfie_photo = reg.selfie_photo
+                        profile.is_self_registered = True
+                        profile.save()
+                    else:
+                        # Get grade level from pre-registered user's profile if available, or use default
+                        grade_level = reg.grade_level
+                        if not grade_level and hasattr(user, 'student_profile'):
+                            grade_level = user.student_profile.grade_level
+                        elif not grade_level:
+                            grade_level = 7  # Default grade if not provided
+                        
+                        StudentProfile.objects.create(
+                            user=user,
+                            grade_level=grade_level,
+                            id_photo_front=reg.id_photo_front,
+                            id_photo_back=reg.id_photo_back,
+                            selfie_photo=reg.selfie_photo,
+                            section=reg.section if reg.section else '',
+                            is_self_registered=True,
+                        )
+                    # Enroll student in subjects
+                    grade_to_use = reg.grade_level
+                    if not grade_to_use and hasattr(user, 'student_profile'):
+                        grade_to_use = user.student_profile.grade_level
+                    if grade_to_use:
+                        subjects = Subject.objects.filter(grade_level=grade_to_use)
                         for subject in subjects:
                             Enrollment.objects.get_or_create(student=user, subject=subject)
 
@@ -362,7 +406,7 @@ def admin_review_request(request, request_id):
                 reg.reviewed_at = timezone.now()
                 reg.reviewed_by = request.user
                 reg.save()
-                messages.success(request, f'Request for {reg.school_id} approved successfully.')
+                messages.success(request, f"Request for {reg.school_id} approved successfully.")
                 return redirect('admin-reg-requests')
                 
         elif action == 'reject':
@@ -378,7 +422,7 @@ def admin_review_request(request, request_id):
             reg.reviewed_at = timezone.now()
             reg.reviewed_by = request.user
             reg.save()
-            messages.success(request, f'Request for {reg.school_id} rejected.')
+            messages.success(request, f"Request for {reg.school_id} rejected.")
             return redirect('admin-reg-requests')
 
     context = {
@@ -452,9 +496,28 @@ def teacher_quizzes(request):
     if request.user.role != CustomUser.ROLE_TEACHER:
         return redirect('login')
 
-    quizzes = Quiz.objects.filter(created_by=request.user).select_related('subject').order_by('-created_at')
-    context = {'quizzes': quizzes}
+    my_subjects = Subject.objects.filter(teacher=request.user).order_by('grade_level', 'subject_code')
+
+    context = {
+        'subject_data': my_subjects,
+        'my_subjects': my_subjects,
+    }
     return render(request, 'dashboard/teacher/quizzes.html', context)
+
+
+@login_required
+def teacher_subject_quizzes(request, subject_id):
+    if request.user.role != CustomUser.ROLE_TEACHER:
+        return redirect('login')
+
+    subject = get_object_or_404(Subject, pk=subject_id, teacher=request.user)
+    quizzes = Quiz.objects.filter(subject=subject, created_by=request.user).select_related('subject').order_by('-created_at')
+
+    context = {
+        'subject': subject,
+        'quizzes': quizzes,
+    }
+    return render(request, 'dashboard/teacher/subject_quizzes.html', context)
 
 
 @login_required
@@ -463,13 +526,36 @@ def teacher_quiz_results(request, quiz_id):
         return redirect('login')
 
     quiz = Quiz.objects.get(quiz_id=quiz_id, created_by=request.user)
+    
+    # Get all students enrolled in this subject
+    enrollments = Enrollment.objects.filter(
+        subject=quiz.subject,
+        is_active=True
+    ).select_related('student')
+    
+    # Get all attempts for this quiz
     attempts = QuizAttempt.objects.filter(
         quiz=quiz, is_completed=True
-    ).select_related('student').order_by('-completed_at')
+    ).select_related('student')
+    
+    # Create a map of student_id -> attempt
+    attempt_map = {attempt.student_id: attempt for attempt in attempts}
+    
+    # Prepare student list
+    student_data = []
+    for enrollment in enrollments:
+        student = enrollment.student
+        attempt = attempt_map.get(student.user_id)
+        student_info = {
+            'student': student,
+            'attempt': attempt,
+            'is_completed': attempt is not None
+        }
+        student_data.append(student_info)
 
     context = {
         'quiz': quiz,
-        'attempts': attempts,
+        'student_data': student_data,
         'avg_score': attempts.aggregate(avg=Avg('percentage'))['avg'] or 0,
         'total_attempts': attempts.count(),
     }
@@ -554,20 +640,50 @@ def student_quizzes(request):
     if request.user.role != CustomUser.ROLE_STUDENT:
         return redirect('login')
 
-    enrolled_subject_ids = Enrollment.objects.filter(
-        student=request.user, is_active=True
-    ).values_list('subject_id', flat=True)
+    enrolled_subjects = Subject.objects.filter(
+        enrollments__student=request.user,
+        enrollments__is_active=True
+    ).order_by('grade_level', 'subject_code').distinct()
 
-    completed_quiz_ids = QuizAttempt.objects.filter(
-        student=request.user, is_completed=True
-    ).values_list('quiz_id', flat=True)
-
-    quizzes = Quiz.objects.filter(
-        subject_id__in=enrolled_subject_ids, is_active=True
-    ).exclude(quiz_id__in=completed_quiz_ids).select_related('subject').order_by('subject__grade_level', 'subject__subject_code')
-
-    context = {'quizzes': quizzes}
+    context = {'subject_data': enrolled_subjects}
     return render(request, 'dashboard/student/quizzes.html', context)
+
+
+@login_required
+def student_subject_quizzes(request, subject_id):
+    if request.user.role != CustomUser.ROLE_STUDENT:
+        return redirect('login')
+
+    subject = get_object_or_404(Subject, pk=subject_id)
+    # Check if student is enrolled
+    if not Enrollment.objects.filter(student=request.user, subject=subject).exists():
+        messages.error(request, 'You are not enrolled in this subject.')
+        return redirect('student-quizzes')
+
+    quizzes = Quiz.objects.filter(subject=subject, is_active=True).select_related('subject', 'created_by').order_by('-created_at')
+    completed_attempts = QuizAttempt.objects.filter(
+        student=request.user,
+        quiz__in=quizzes,
+        is_completed=True
+    ).select_related('quiz')
+    # Create map of quiz id to attempt
+    attempt_map = {attempt.quiz_id: attempt for attempt in completed_attempts}
+
+    # Prepare quiz data
+    quiz_data = []
+    for quiz in quizzes:
+        quiz_info = {
+            'quiz': quiz,
+            'is_completed': quiz.quiz_id in attempt_map,
+            'attempt': attempt_map.get(quiz.quiz_id)
+        }
+        quiz_data.append(quiz_info)
+
+    context = {
+        'subject': subject,
+        'quiz_data': quiz_data
+    }
+    return render(request, 'dashboard/student/subject_quizzes.html', context)
 
 
 @login_required
@@ -651,6 +767,83 @@ def teacher_create_quiz(request):
                 messages.error(request, 'Invalid subject selected.')
 
     context = {'my_subjects': my_subjects}
+    return render(request, 'dashboard/teacher/create_quiz.html', context)
+
+
+@login_required
+def teacher_edit_quiz(request, quiz_id):
+    if request.user.role != CustomUser.ROLE_TEACHER:
+        return redirect('login')
+
+    from quizzes.models import Question, Choice
+    quiz = get_object_or_404(Quiz, quiz_id=quiz_id, created_by=request.user)
+    my_subjects = Subject.objects.filter(teacher=request.user).order_by('grade_level', 'subject_code')
+
+    if request.method == 'POST':
+        title        = request.POST.get('title', '').strip()
+        description  = request.POST.get('description', '').strip()
+        subject_id   = request.POST.get('subject')
+        quiz_type    = request.POST.get('quiz_type', 'regular')
+        time_limit   = int(request.POST.get('time_limit', 0) or 0)
+        is_active    = request.POST.get('is_active') == 'on'
+        allow_multi  = request.POST.get('allow_multiple_attempts') == 'on'
+        show_answers = request.POST.get('show_answers_after_submit') == 'on'
+
+        if not title or not subject_id:
+            messages.error(request, 'Title and Subject are required.')
+        else:
+            try:
+                subject = Subject.objects.get(pk=subject_id, teacher=request.user)
+                # Update quiz fields
+                quiz.title = title
+                quiz.description = description
+                quiz.subject = subject
+                quiz.quiz_type = quiz_type
+                quiz.time_limit = time_limit
+                quiz.is_active = is_active
+                quiz.allow_multiple_attempts = allow_multi
+                quiz.show_answers_after_submit = show_answers
+                quiz.save()
+
+                # Delete existing questions/choices
+                quiz.questions.all().delete()
+
+                # Parse new question data
+                q_idx = 0
+                while True:
+                    q_text = request.POST.get(f'questions[{q_idx}][text]', '').strip()
+                    if not q_text:
+                        break
+                    question = Question.objects.create(
+                        quiz=quiz,
+                        text=q_text,
+                        order=q_idx + 1,
+                    )
+                    correct_choice = request.POST.get(f'questions[{q_idx}][correct]', '0')
+                    for c_idx in range(4):
+                        c_text = request.POST.get(f'questions[{q_idx}][choices][{c_idx}]', '').strip()
+                        if c_text:
+                            Choice.objects.create(
+                                question=question,
+                                text=c_text,
+                                is_correct=(str(c_idx) == correct_choice),
+                                order=c_idx + 1,
+                            )
+                    q_idx += 1
+
+                messages.success(request, f'Quiz "{quiz.title}" updated successfully!')
+                return redirect('teacher-quizzes')
+            except Subject.DoesNotExist:
+                messages.error(request, 'Invalid subject selected.')
+
+    # Pass existing questions to template
+    questions = quiz.questions.prefetch_related('choices').all()
+    context = {
+        'my_subjects': my_subjects,
+        'quiz': quiz,
+        'questions': questions,
+        'is_edit': True
+    }
     return render(request, 'dashboard/teacher/create_quiz.html', context)
 
 
