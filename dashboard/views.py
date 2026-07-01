@@ -202,15 +202,20 @@ def admin_users(request):
         return redirect('admin-users')
 
     role_filter = request.GET.get('role')
+    grade_filter = request.GET.get('grade')
     users = CustomUser.objects.all().order_by('-created_at')
     if role_filter is not None:
         users = users.filter(role=role_filter)
-        
+    if grade_filter and role_filter == '2':
+        users = users.filter(student_profile__grade_level=grade_filter)
+
     vacant_subjects = Subject.objects.filter(teacher__isnull=True).order_by('grade_level', 'subject_code')
 
     context = {
         'users': users,
         'role_filter': role_filter,
+        'grade_filter': grade_filter,
+        'grade_list': [7, 8, 9, 10],
         'vacant_subjects': vacant_subjects,
     }
     return render(request, 'dashboard/admin/users.html', context)
@@ -453,11 +458,36 @@ def admin_subject_detail(request, subject_id):
     subject = get_object_or_404(Subject, subject_id=subject_id)
     enrollments = Enrollment.objects.filter(subject=subject).select_related('student')
     quizzes = Quiz.objects.filter(subject=subject).order_by('-created_at')
+    
+    # Get all available teachers
+    all_teachers = CustomUser.objects.filter(role=CustomUser.ROLE_TEACHER).order_by('first_name', 'last_name')
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'assign_teacher':
+            teacher_id = request.POST.get('teacher_id')
+            if teacher_id:
+                try:
+                    teacher = CustomUser.objects.get(user_id=teacher_id, role=CustomUser.ROLE_TEACHER)
+                    subject.teacher = teacher
+                    subject.save()
+                    messages.success(request, f"Successfully assigned {teacher.full_name} to {subject.name}")
+                except CustomUser.DoesNotExist:
+                    messages.error(request, "Teacher not found.")
+            return redirect('admin-subject-detail', subject_id=subject_id)
+        
+        elif action == 'remove_teacher':
+            subject.teacher = None
+            subject.save()
+            messages.success(request, f"Removed teacher from {subject.name}")
+            return redirect('admin-subject-detail', subject_id=subject_id)
 
     context = {
         'subject': subject,
         'enrollments': enrollments,
         'quizzes': quizzes,
+        'all_teachers': all_teachers,
     }
     return render(request, 'dashboard/admin/subject_detail.html', context)
 
@@ -643,9 +673,28 @@ def student_quizzes(request):
     enrolled_subjects = Subject.objects.filter(
         enrollments__student=request.user,
         enrollments__is_active=True
-    ).order_by('grade_level', 'subject_code').distinct()
+    ).select_related('teacher').order_by('grade_level', 'subject_code').distinct()
 
-    context = {'subject_data': enrolled_subjects}
+    # For each subject, compute pending (unanswered active quizzes) count
+    completed_quiz_ids = QuizAttempt.objects.filter(
+        student=request.user,
+        is_completed=True
+    ).values_list('quiz_id', flat=True)
+
+    subject_data = []
+    for subject in enrolled_subjects:
+        total_active = Quiz.objects.filter(subject=subject, is_active=True).count()
+        completed_in_subject = Quiz.objects.filter(
+            subject=subject, is_active=True, quiz_id__in=completed_quiz_ids
+        ).count()
+        pending = total_active - completed_in_subject
+        subject_data.append({
+            'subject': subject,
+            'total_quizzes': total_active,
+            'pending_count': pending,
+        })
+
+    context = {'subject_data': subject_data}
     return render(request, 'dashboard/student/quizzes.html', context)
 
 
@@ -707,6 +756,7 @@ def teacher_create_quiz(request):
         return redirect('login')
 
     my_subjects = Subject.objects.filter(teacher=request.user).order_by('grade_level', 'subject_code')
+    selected_subject_id = request.GET.get('subject', None)
 
     if request.method == 'POST':
         from quizzes.models import Question, Choice
@@ -737,6 +787,25 @@ def teacher_create_quiz(request):
                     allow_multiple_attempts=allow_multi,
                     show_answers_after_submit=show_answers,
                 )
+                
+                # Reset final grades and delete all existing quiz attempts for students in this subject
+                # This way, everything is fresh and starts from the new quizzes
+                from results.models import StudentAnswer
+                enrollments = Enrollment.objects.filter(subject=subject)
+                for enrollment in enrollments:
+                    # Get all attempts in this subject for student
+                    attempts_to_delete = QuizAttempt.objects.filter(
+                        student=enrollment.student,
+                        quiz__subject=subject
+                    )
+                    # Delete their answers first (to avoid foreign key errors)
+                    StudentAnswer.objects.filter(attempt__in=attempts_to_delete).delete()
+                    # Then delete the attempts themselves
+                    attempts_to_delete.delete()
+                    # Clear enrollment grade
+                    enrollment.final_grade = None
+                    enrollment.is_promoted = False
+                    enrollment.save()
 
                 # Parse question data sent as indexed POST fields
                 q_idx = 0
@@ -762,11 +831,14 @@ def teacher_create_quiz(request):
                     q_idx += 1
 
                 messages.success(request, f'Quiz "{quiz.title}" created with {q_idx} questions!')
-                return redirect('teacher-quizzes')
+                return redirect('teacher-subject-quizzes', subject_id=subject_id)
             except Subject.DoesNotExist:
                 messages.error(request, 'Invalid subject selected.')
 
-    context = {'my_subjects': my_subjects}
+    context = {
+        'my_subjects': my_subjects,
+        'selected_subject_id': selected_subject_id,
+    }
     return render(request, 'dashboard/teacher/create_quiz.html', context)
 
 
@@ -804,6 +876,21 @@ def teacher_edit_quiz(request, quiz_id):
                 quiz.allow_multiple_attempts = allow_multi
                 quiz.show_answers_after_submit = show_answers
                 quiz.save()
+                
+                # Reset final grades and delete all existing quiz attempts for students in this subject
+                # This way, everything is fresh and starts from the new quizzes
+                from results.models import StudentAnswer
+                enrollments = Enrollment.objects.filter(subject=subject)
+                for enrollment in enrollments:
+                    attempts_to_delete = QuizAttempt.objects.filter(
+                        student=enrollment.student,
+                        quiz__subject=subject
+                    )
+                    StudentAnswer.objects.filter(attempt__in=attempts_to_delete).delete()
+                    attempts_to_delete.delete()
+                    enrollment.final_grade = None
+                    enrollment.is_promoted = False
+                    enrollment.save()
 
                 # Delete existing questions/choices
                 quiz.questions.all().delete()
@@ -832,7 +919,7 @@ def teacher_edit_quiz(request, quiz_id):
                     q_idx += 1
 
                 messages.success(request, f'Quiz "{quiz.title}" updated successfully!')
-                return redirect('teacher-quizzes')
+                return redirect('teacher-subject-quizzes', subject_id=subject_id)
             except Subject.DoesNotExist:
                 messages.error(request, 'Invalid subject selected.')
 
@@ -845,6 +932,34 @@ def teacher_edit_quiz(request, quiz_id):
         'is_edit': True
     }
     return render(request, 'dashboard/teacher/create_quiz.html', context)
+
+
+@login_required
+def teacher_delete_quiz(request, quiz_id):
+    if request.user.role != CustomUser.ROLE_TEACHER:
+        return redirect('login')
+        
+    quiz = get_object_or_404(Quiz, quiz_id=quiz_id, created_by=request.user)
+    subject_id = quiz.subject.subject_id
+    
+    # Reset final grades and delete all attempts in this subject
+    from results.models import StudentAnswer
+    enrollments = Enrollment.objects.filter(subject=quiz.subject)
+    for enrollment in enrollments:
+        attempts_to_delete = QuizAttempt.objects.filter(
+            student=enrollment.student,
+            quiz__subject=quiz.subject
+        )
+        StudentAnswer.objects.filter(attempt__in=attempts_to_delete).delete()
+        attempts_to_delete.delete()
+        enrollment.final_grade = None
+        enrollment.is_promoted = False
+        enrollment.save()
+    
+    # Delete the quiz (questions/choices cascade delete automatically)
+    quiz.delete()
+    messages.success(request, 'Quiz deleted successfully!')
+    return redirect('teacher-subject-quizzes', subject_id=subject_id)
 
 
 # ── Student: Take Quiz ────────────────────────────────────────────────────────
@@ -916,6 +1031,26 @@ def student_submit_quiz(request, quiz_id):
     attempt.is_completed = True
     attempt.completed_at = timezone.now()
     attempt.save()
+    
+    # Update the final grade for this student in this subject
+    enrollment = Enrollment.objects.filter(student=request.user, subject=quiz.subject).first()
+    if enrollment:
+        # Get all completed quiz attempts in this subject
+        attempts = QuizAttempt.objects.filter(
+            student=request.user,
+            quiz__subject=quiz.subject,
+            is_completed=True
+        )
+        # Check if there is at least one final exam attempt
+        has_final = attempts.filter(quiz__quiz_type='final_exam').exists()
+        if has_final:
+            avg_pct = attempts.aggregate(a=Avg('percentage'))['a']
+            enrollment.final_grade = avg_pct
+            enrollment.is_promoted = avg_pct >= quiz.subject.passing_score
+        else:
+            enrollment.final_grade = None
+            enrollment.is_promoted = False
+        enrollment.save()
 
     return redirect('student-quiz-result', attempt_id=attempt.attempt_id)
 

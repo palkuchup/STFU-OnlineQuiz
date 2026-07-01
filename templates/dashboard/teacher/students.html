@@ -19,10 +19,10 @@
 {% endblock %}
 
 {% block dashboard_content %}
-{% regroup enrollments by subject.grade_level as grade_groups %}
-{% for grade_group in grade_groups %}
+{% regroup enrollments by subject as subject_groups %}
+{% for subject_group in subject_groups %}
 <div class="section-header">
-    <h2 class="section-title">Grade {{ grade_group.grouper }} — {{ grade_group.list.0.subject.name }}</h2>
+    <h2 class="section-title">{{ subject_group.grouper.name }} <span style="font-size:0.9rem;font-weight:600;color:var(--text-secondary);">— Grade {{ subject_group.grouper.grade_level }}</span></h2>
 </div>
 <div class="card" style="margin-bottom: 24px;">
     <div class="card-body" style="padding:0;">
@@ -38,7 +38,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for enrollment in grade_group.list %}
+                    {% for enrollment in subject_group.list %}
                     <tr>
                         <td><div class="user-cell"><div class="user-avatar-sm">{{ enrollment.student.first_name|first }}{{ enrollment.student.last_name|first }}</div>{{ enrollment.student.full_name }}</div></td>
                         <td><code>{{ enrollment.student.school_id }}</code></td>

@@ -49,9 +49,36 @@
         </div>
 
         <div style="margin-bottom: 24px;">
-            <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 4px;">Assigned Teacher</div>
-            <div style="font-weight: 800; color: var(--text-primary); font-size: 1.1rem;">
+            <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 8px;">Assigned Teacher</div>
+            <div style="font-weight: 800; color: var(--text-primary); font-size: 1.1rem; margin-bottom: 12px;">
                 {% if subject.teacher %}{{ subject.teacher.full_name }}{% else %}<em>No teacher assigned</em>{% endif %}
+            </div>
+            
+            <!-- Change Teacher Button -->
+            <button id="change-teacher-btn" class="btn-primary-action" style="margin-bottom: 12px;">
+                {% if subject.teacher %}Change Teacher{% else %}Assign Teacher{% endif %}
+            </button>
+            
+            <!-- Assign/Remove Teacher Form (Hidden by Default) -->
+            <div id="assign-form" class="assign-form">
+                <form method="post" id="teacher-form" style="display: flex; flex-direction: column; gap: 12px; padding-top: 8px;">
+                    {% csrf_token %}
+                    <div style="display: flex; gap: 12px; align-items: stretch;">
+                        <select name="teacher_id" id="teacher-select" style="flex: 1; padding: 12px 18px; border: 2px solid var(--border-color); border-radius: var(--radius-xl); font-weight: 700; font-family: inherit; font-size: 0.95rem; outline: none; background: var(--bg-input); transition: var(--transition);">
+                            <option value="">Select a teacher...</option>
+                            {% for teacher in all_teachers %}
+                            <option value="{{ teacher.user_id }}" {% if subject.teacher and subject.teacher.user_id == teacher.user_id %}selected{% endif %}>{{ teacher.full_name }}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" name="action" value="assign_teacher" class="btn-primary-action" id="assign-btn">Assign</button>
+                    </div>
+                    <div style="display: flex; gap: 12px; align-items: center;">
+                        {% if subject.teacher %}
+                        <button type="submit" name="action" value="remove_teacher" class="btn-text" style="color: #DC2626;">Remove Teacher</button>
+                        {% endif %}
+                        <button type="button" id="cancel-btn" class="btn-text" style="color: var(--text-secondary);">Cancel</button>
+                    </div>
+                </form>
             </div>
         </div>
 
@@ -101,5 +128,61 @@
             </table>
         </div>
     </div>
-</div>
+
+    <!-- JavaScript for form handling -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Toggle form visibility
+            const changeBtn = document.getElementById('change-teacher-btn');
+            const assignForm = document.getElementById('assign-form');
+            const cancelBtn = document.getElementById('cancel-btn');
+            const teacherForm = document.getElementById('teacher-form');
+            const teacherSelect = document.getElementById('teacher-select');
+            
+            if (changeBtn && assignForm) {
+                changeBtn.addEventListener('click', () => {
+                    assignForm.classList.toggle('open');
+                });
+            }
+            
+            if (cancelBtn && assignForm) {
+                cancelBtn.addEventListener('click', () => {
+                    assignForm.classList.remove('open');
+                });
+            }
+            
+            // Listen to form submit instead of individual buttons
+            if (teacherForm) {
+                teacherForm.addEventListener('submit', (e) => {
+                    // Get the clicked button from the event
+                    const clickedButton = e.submitter;
+                    
+                    if (clickedButton && clickedButton.name === 'action') {
+                        const action = clickedButton.value;
+                        
+                        if (action === 'assign_teacher') {
+                            // Validate select
+                            if (!teacherSelect.value) {
+                                e.preventDefault();
+                                alert('Please select a teacher first!');
+                                return;
+                            }
+                            // Show confirmation
+                            const selectedText = teacherSelect.options[teacherSelect.selectedIndex].text;
+                            const confirmed = confirm(`Are you sure you want to assign ${selectedText} to this subject?`);
+                            if (!confirmed) {
+                                e.preventDefault();
+                            }
+                        } else if (action === 'remove_teacher') {
+                            // Show confirmation
+                            const confirmed = confirm('Are you sure you want to remove the assigned teacher from this subject?');
+                            if (!confirmed) {
+                                e.preventDefault();
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    </script>
 {% endblock %}

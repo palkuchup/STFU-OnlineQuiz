@@ -58,9 +58,9 @@
 .review-card.skipped { border-left: 4px solid #6b7280; }
 
 .review-q-num { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing:.07em; color: var(--text-muted); margin-bottom: 8px; }
-.review-q-text { font-size: 0.9375rem; font-weight: 600; color: white; margin-bottom: 16px; }
+.review-q-text { font-size: 0.9375rem; font-weight: 600; color: var(--text-primary); margin-bottom: 16px; }
 
-.review-choices { display: flex; flex-direction: column; gap: 8px; }
+.review-choices { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
 .review-choice {
     display: flex; align-items: center; gap: 10px;
     padding: 10px 14px; border-radius: var(--radius-sm);

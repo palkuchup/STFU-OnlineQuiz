@@ -18,33 +18,64 @@
 </a>
 {% endblock %}
 
+{% block extra_css %}
+<style>
+.pending-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--color-primary);
+    display: inline-block;
+    animation: pulse-dot 1.5s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.3); }
+}
+.badge-pending-quiz {
+    background: var(--color-primary);
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 800;
+    padding: 3px 10px;
+    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+</style>
+{% endblock %}
+
 {% block dashboard_content %}
 {% if subject_data %}
 <div class="subject-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
-    {% for subject in subject_data %}
-    <a href="{% url 'student-subject-quizzes' subject.subject_id %}" class="card" style="display: block; text-decoration: none; transition: transform 0.2s, box-shadow 0.2s;">
+    {% for item in subject_data %}
+    <a href="{% url 'student-subject-quizzes' item.subject.subject_id %}" class="card" style="display: block; text-decoration: none; transition: transform 0.2s, box-shadow 0.2s; position: relative;">
+        {% if item.pending_count > 0 %}
+        <div style="position:absolute; top:14px; right:14px; display:flex; align-items:center; gap:6px;">
+            <span class="pending-dot"></span>
+            <span class="badge-pending-quiz">{{ item.pending_count }} Pending</span>
+        </div>
+        {% endif %}
         <div class="card-body" style="padding: 24px;">
             <div style="display: flex; align-items: center; gap: 16px;">
-                <div style="width: 72px; height: 72px; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 2.5rem;
-                    {% if subject.subject_code == 'english' %}background: #DBEAFE;{% endif %}
-                    {% if subject.subject_code == 'math' %}background: #FEE2E2;{% endif %}
-                    {% if subject.subject_code == 'science' %}background: #D1FAE5;{% endif %}
-                    {% if subject.subject_code == 'filipino' %}background: #FEF3C7;{% endif %}">
-                    {% if subject.subject_code == 'english' %}📖
-                    {% elif subject.subject_code == 'math' %}➗
-                    {% elif subject.subject_code == 'science' %}🔬
+                <div style="width: 72px; height: 72px; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; background: #F3F4F6; flex-shrink:0;">
+                    {% if item.subject.subject_code == 'english' %}📖
+                    {% elif item.subject.subject_code == 'math' %}➗
+                    {% elif item.subject.subject_code == 'science' %}🔬
                     {% else %}🏳️{% endif %}
                 </div>
-                <div style="flex: 1;">
-                    <h3 style="margin: 0; font-size: 1.25rem; font-weight: 800; color: var(--text-primary); line-height: 1.2;">{{ subject.name }}</h3>
-                    <p style="margin: 6px 0 12px 0; color: var(--text-secondary); font-size: 0.95rem;">
-                        {% if subject.teacher %}{{ subject.teacher.full_name }}{% endif %}
+                <div style="flex: 1; min-width:0;">
+                    <h3 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: var(--text-primary); line-height: 1.2; {% if item.pending_count > 0 %}padding-right:90px;{% endif %}">{{ item.subject.name }}</h3>
+                    <p style="margin: 6px 0 12px 0; color: var(--text-secondary); font-size: 0.9rem;">
+                        {% if item.subject.teacher %}{{ item.subject.teacher.full_name }}{% else %}<em>No teacher</em>{% endif %}
                     </p>
-                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-                        <span class="badge badge-grade">Grade {{ subject.grade_level }}</span>
-                        <span class="badge" style="background: var(--bg-input); color: var(--text-secondary);">
-                            {{ subject.quizzes.count }} Quiz{{ subject.quizzes.count|pluralize }}
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
+                        <span class="badge badge-grade">Grade {{ item.subject.grade_level }}</span>
+                        <span class="badge badge-secondary">
+                            {{ item.total_quizzes }} Quiz{{ item.total_quizzes|pluralize }}
                         </span>
+                        {% if item.pending_count == 0 and item.total_quizzes > 0 %}
+                        <span class="badge badge-success" style="font-size:0.72rem;">✓ All Done</span>
+                        {% endif %}
                     </div>
                 </div>
             </div>

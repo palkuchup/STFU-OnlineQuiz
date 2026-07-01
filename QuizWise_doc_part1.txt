@@ -1,0 +1,18 @@
+# QuizWise — Online Quiz System
+## Complete Project Documentation
+### Web Systems & Technologies 2 — Final Project Presentation
+
+> Team Reference Document — Share this with all members. Each section maps to one role in the presentation.
+
+---
+
+## TABLE OF CONTENTS
+
+1. Project Overview
+2. Database Design (ERD)
+3. Django Models Explained
+4. Database Migrations and Django Admin
+5. Interface and UI Design
+6. How Django Models Connect to the UI
+7. Displaying Records and CRUD Operations
+8. Project Summary, Challenges and Future Improvements

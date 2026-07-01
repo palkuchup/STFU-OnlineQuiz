@@ -32,16 +32,6 @@
 </a>
 {% endblock %}
 
-{% block topbar_actions %}
-<a href="{% url 'teacher-create-quiz' %}" class="btn-primary-action">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="12" y1="5" x2="12" y2="19" />
-        <line x1="5" y1="12" x2="19" y2="12" />
-    </svg>
-    Create Quiz
-</a>
-{% endblock %}
-
 {% block dashboard_content %}
 {% if subject_data %}
 <div class="subject-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">

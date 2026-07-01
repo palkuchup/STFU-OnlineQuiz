@@ -71,10 +71,12 @@
     <div class="card">
         <div class="card-header">
             <h3>My Subjects</h3>
+            <span style="font-size:0.8rem;color:var(--text-secondary);">{{ my_subjects.count }} assigned</span>
         </div>
         <div class="card-body">
             {% for subject in my_subjects %}
-            <div class="subject-item">
+            <a href="{% url 'teacher-subject-quizzes' subject.subject_id %}" style="text-decoration:none;color:inherit;">
+            <div class="subject-item" style="cursor:pointer;transition:background 0.2s;border-radius:12px;padding:10px 8px;" onmouseover="this.style.background='var(--bg-hover,rgba(0,0,0,0.04))'" onmouseout="this.style.background=''">
                 <div class="subject-icon subject-{{ subject.subject_code }}">
                     {% if subject.subject_code == 'english' %}📖
                     {% elif subject.subject_code == 'math' %}➗
@@ -83,10 +85,11 @@
                 </div>
                 <div class="subject-info">
                     <div class="subject-name">{{ subject.name }}</div>
-                    <div class="subject-meta">{{ subject.enrollments.count }} students enrolled</div>
+                    <div class="subject-meta">{{ subject.enrollments.count }} student{{ subject.enrollments.count|pluralize }} enrolled · <span style="color:var(--color-primary,#f97316);">View Quizzes →</span></div>
                 </div>
                 <span class="badge badge-grade">Grade {{ subject.grade_level }}</span>
             </div>
+            </a>
             {% empty %}
             <div class="empty-state"><span class="empty-icon">📚</span><p>No subjects assigned yet</p></div>
             {% endfor %}

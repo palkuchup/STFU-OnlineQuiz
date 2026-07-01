@@ -126,7 +126,7 @@
                     <select name="subject" class="form-select" required>
                         <option value="">Select subject...</option>
                         {% for subject in my_subjects %}
-                        <option value="{{ subject.subject_id }}" {% if is_edit and quiz.subject.subject_id == subject.subject_id %}selected{% endif %}>{{ subject.name }} (Grade {{ subject.grade_level }})</option>
+                        <option value="{{ subject.subject_id }}" {% if is_edit and quiz.subject.subject_id == subject.subject_id %}selected{% elif selected_subject_id and selected_subject_id == subject.subject_id|stringformat:"s" %}selected{% endif %}>{{ subject.name }} (Grade {{ subject.grade_level }})</option>
                         {% endfor %}
                     </select>
                 </div>

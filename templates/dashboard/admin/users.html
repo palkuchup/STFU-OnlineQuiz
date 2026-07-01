@@ -28,7 +28,7 @@
 
 {% block dashboard_content %}
 <!-- Filter Tabs & Actions -->
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 24px;">
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px;">
     <div class="filter-tabs" style="margin-bottom: 0;">
         <a href="{% url 'admin-users' %}" class="filter-tab {% if not role_filter %}active{% endif %}">All Users</a>
         <a href="{% url 'admin-users' %}?role=0" class="filter-tab {% if role_filter == '0' %}active{% endif %}">Admins</a>
@@ -39,6 +39,25 @@
         + Add User
     </button>
 </div>
+
+{% if role_filter == '2' %}
+<div style="display:flex; align-items:center; gap: 8px; margin-bottom: 20px;">
+    <span style="font-size:0.85rem; font-weight:700; color:var(--text-secondary); margin-right:4px;">Filter by Grade:</span>
+    <a href="{% url 'admin-users' %}?role=2"
+       style="padding:6px 16px; border-radius:8px; font-size:0.85rem; font-weight:700; text-decoration:none;
+              {% if not grade_filter %}background:var(--color-primary);color:white;{% else %}background:var(--bg-input);color:var(--text-secondary);{% endif %}">
+        All Grades
+    </a>
+    {% for g in grade_list %}
+    <a href="{% url 'admin-users' %}?role=2&grade={{ g }}"
+       style="padding:6px 16px; border-radius:8px; font-size:0.85rem; font-weight:700; text-decoration:none;
+              {% if grade_filter == g|stringformat:'s' %}background:var(--color-primary);color:white;{% else %}background:var(--bg-input);color:var(--text-secondary);{% endif %}">
+        Grade {{ g }}
+    </a>
+    {% endfor %}
+</div>
+{% endif %}
+
 
 <!-- Add User Modal -->
 <div id="addUserModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">

@@ -203,8 +203,8 @@
 
 /* ── Welcome Banners ────────────────────────────────────── */
 .welcome-banner {
-  background: #FFF3EB;
-  border: 1px solid rgba(255,107,0,0.2);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
   padding: 40px 48px;
   margin-bottom: 40px;
@@ -212,14 +212,14 @@
   overflow: hidden;
 }
 
-.welcome-text h2 { font-size: 2rem; font-weight: 900; margin-bottom: 8px; color: var(--color-primary-dark); }
+.welcome-text h2 { font-size: 2rem; font-weight: 900; margin-bottom: 8px; color: var(--text-primary); }
 .welcome-text p { color: var(--text-secondary); font-size: 1.1rem; font-weight: 600; }
 
 .welcome-student {
-  background: #E8F5E9;
-  border-color: rgba(76,175,80,0.2);
+  background: var(--bg-card);
+  border-color: var(--border-color);
 }
-.welcome-student .welcome-text h2 { color: #2E7D32; }
+.welcome-student .welcome-text h2 { color: var(--text-primary); }
 
 /* ── Stats Grid ─────────────────────────────────────────── */
 .stats-grid {
@@ -249,10 +249,12 @@
   display: flex; align-items: center; justify-content: center;
 }
 
-.stat-purple .stat-icon { background: #F3E8FF; color: #9333EA; }
-.stat-blue .stat-icon { background: #DBEAFE; color: #2563EB; }
-.stat-green .stat-icon { background: #D1FAE5; color: #059669; }
-.stat-orange .stat-icon { background: #FFEDD5; color: #EA580C; }
+/* All stat cards use the same neutral icon style */
+.stat-purple .stat-icon,
+.stat-blue .stat-icon,
+.stat-green .stat-icon,
+.stat-orange .stat-icon { background: var(--bg-input); color: var(--text-secondary); }
+
 
 .stat-content { flex: 1; }
 .stat-value { font-size: 2rem; font-weight: 900; color: var(--text-primary); line-height: 1.2; }
@@ -291,12 +293,13 @@
   font-size: 0.8rem; font-weight: 800; white-space: nowrap;
 }
 
-.badge-success { background: #D1FAE5; color: #059669; }
-.badge-danger { background: #FEE2E2; color: #DC2626; }
-.badge-warning { background: #FEF3C7; color: #D97706; }
+.badge-success { background: #ECFDF5; color: #065F46; }
+.badge-danger { background: #FEF2F2; color: #B91C1C; }
+.badge-warning { background: #FFFBEB; color: #92400E; }
 .badge-secondary { background: #F3F4F6; color: #4B5563; }
-.badge-pending { background: #DBEAFE; color: #2563EB; }
-.badge-grade { background: #F3E8FF; color: #9333EA; border: 2px solid #E9D5FF; }
+.badge-pending { background: #F3F4F6; color: #374151; }
+.badge-grade { background: #F3F4F6; color: #374151; border: 1px solid #E5E7EB; }
+
 
 /* ── Lists & Items ──────────────────────────────────────── */
 .subject-item, .quiz-item, .request-item {
@@ -315,10 +318,11 @@
   width: 56px; height: 56px; border-radius: 16px;
   display: flex; align-items: center; justify-content: center; font-size: 1.5rem;
 }
-.subject-english { background: #DBEAFE; }
-.subject-math { background: #FEE2E2; }
-.subject-science { background: #D1FAE5; }
-.subject-filipino { background: #FEF3C7; }
+.subject-english { background: #F3F4F6; }
+.subject-math { background: #F3F4F6; }
+.subject-science { background: #F3F4F6; }
+.subject-filipino { background: #F3F4F6; }
+
 
 .subject-info, .quiz-info, .request-info { flex: 1; }
 .subject-name, .quiz-title, .request-name { font-weight: 800; font-size: 1.1rem; color: var(--text-primary); margin-bottom: 4px; }
@@ -385,10 +389,11 @@ a.card:hover {
   display: flex; align-items: center; justify-content: center;
   font-size: 2rem;
 }
-.subject-card-english  .subject-card-icon { background: #DBEAFE; }
-.subject-card-math     .subject-card-icon { background: #FEE2E2; }
-.subject-card-science  .subject-card-icon { background: #D1FAE5; }
-.subject-card-filipino .subject-card-icon { background: #FEF3C7; }
+.subject-card-english  .subject-card-icon { background: #F3F4F6; }
+.subject-card-math     .subject-card-icon { background: #F3F4F6; }
+.subject-card-science  .subject-card-icon { background: #F3F4F6; }
+.subject-card-filipino .subject-card-icon { background: #F3F4F6; }
+
 
 .subject-card-info { flex: 1; min-width: 0; }
 .subject-card-name { font-size: 1.125rem; font-weight: 800; color: var(--text-primary); margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -582,5 +587,63 @@ a.card:hover {
 }
 
 .toast-close:hover {
-  opacity: 1;
+    opacity: 1;
+}
+
+/* Primary Action Buttons */
+.btn-primary-action {
+    padding: 12px 24px;
+    background: var(--color-primary);
+    color: white;
+    border: none;
+    border-radius: var(--radius-xl);
+    font-size: 0.95rem;
+    font-weight: 800;
+    font-family: inherit;
+    cursor: pointer;
+    transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 4px 16px rgba(255, 107, 0, 0.3);
+}
+.btn-primary-action:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 107, 0, 0.4);
+    background: var(--color-primary-light);
+}
+.btn-primary-action:active {
+    transform: translateY(0);
+}
+.btn-primary-action.btn-sm {
+    padding: 8px 16px;
+    font-size: 0.9rem;
+}
+
+.btn-text {
+    background: none;
+    border: none;
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    cursor: pointer;
+    padding: 4px 0;
+    transition: var(--transition);
+}
+.btn-text:hover {
+    color: var(--color-primary-dark);
+}
+
+/* Assign Form Slide Animation */
+.assign-form {
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height 0.4s ease, opacity 0.3s ease;
+}
+.assign-form.open {
+    max-height: 500px; /* Should be enough for our small form */
+    opacity: 1;
 }
